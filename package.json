@@ -1,0 +1,24 @@
+{
+  "name": "meeting-bot",
+  "version": "1.0.0",
+  "description": "Discord 會議管理機器人",
+  "main": "src/index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": ["discord", "bot", "meeting", "calendar"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "dotenv": "^16.6.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}

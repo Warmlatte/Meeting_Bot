@@ -1,0 +1,15 @@
+# 環境變數
+.env
+
+# 系統檔案
+.DS_Store
+
+# 依賴套件
+node_modules/
+
+# 日誌檔案
+*.log
+npm-debug.log*
+
+# 專案內部文件
+CLAUDE.md
