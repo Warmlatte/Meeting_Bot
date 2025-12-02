@@ -1,8 +1,12 @@
 # 環境變數
 .env
+.env.backup
 
 # 系統檔案
 .DS_Store
+
+# 模板資料夾
+DCbot-template/
 
 # 依賴套件
 node_modules/

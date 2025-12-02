@@ -27,4 +27,4 @@ const CONSTANTS = {
   },
 };
 
-module.exports = CONSTANTS;
+export default CONSTANTS;

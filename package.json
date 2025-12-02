@@ -10,13 +10,21 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js"
   },
-  "keywords": ["discord", "bot", "meeting", "calendar"],
+  "keywords": [
+    "discord",
+    "bot",
+    "meeting",
+    "calendar"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
+    "dayjs": "^1.11.19",
     "discord.js": "^14.25.1",
-    "dotenv": "^16.6.1"
+    "dotenv": "^16.6.1",
+    "google-auth-library": "^10.5.0",
+    "googleapis": "^166.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

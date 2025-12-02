@@ -1,7 +1,12 @@
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-const config = require('./config/env');
+import { Client, Collection, GatewayIntentBits } from "discord.js";
+import { readdir } from "fs/promises";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import config from "./config/env.js";
+
+// 取得當前檔案的目錄路徑 (ES Modules 中需要手動處理 __dirname)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * 建立 Discord Client
@@ -15,24 +20,38 @@ const client = new Client({
 });
 
 /**
- * 載入指令
+ * 初始化指令集合
  */
 client.commands = new Collection();
-const commandsPath = path.join(__dirname, 'commands');
 
-// 檢查 commands 目錄是否存在
-if (fs.existsSync(commandsPath)) {
-  const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+/**
+ * 載入指令
+ */
+async function loadCommands() {
+  const commandsPath = join(__dirname, "commands");
 
-  for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
+  try {
+    const commandFiles = (await readdir(commandsPath)).filter((file) =>
+      file.endsWith(".js")
+    );
 
-    if ('data' in command && 'execute' in command) {
-      client.commands.set(command.data.name, command);
-      console.log(`✅ 已載入指令: ${command.data.name}`);
+    for (const file of commandFiles) {
+      const filePath = join(commandsPath, file);
+      const command = await import(`file://${filePath}`);
+      const commandModule = command.default;
+
+      if ("data" in commandModule && "execute" in commandModule) {
+        client.commands.set(commandModule.data.name, commandModule);
+        console.log(`✅ 已載入指令: ${commandModule.data.name}`);
+      } else {
+        console.warn(`⚠️ 指令 ${file} 缺少必要的 "data" 或 "execute" 屬性`);
+      }
+    }
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      console.log("⚠️ commands 目錄不存在,跳過指令載入");
     } else {
-      console.warn(`⚠️ 指令 ${file} 缺少必要的 "data" 或 "execute" 屬性`);
+      console.error("❌ 載入指令時發生錯誤:", error);
     }
   }
 }
@@ -40,42 +59,65 @@ if (fs.existsSync(commandsPath)) {
 /**
  * 載入事件處理器
  */
-const eventsPath = path.join(__dirname, 'events');
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+async function loadEvents() {
+  const eventsPath = join(__dirname, "events");
 
-for (const file of eventFiles) {
-  const filePath = path.join(eventsPath, file);
-  const event = require(filePath);
+  try {
+    const eventFiles = (await readdir(eventsPath)).filter((file) =>
+      file.endsWith(".js")
+    );
 
-  if (event.once) {
-    client.once(event.name, (...args) => event.execute(...args));
-  } else {
-    client.on(event.name, (...args) => event.execute(...args));
+    for (const file of eventFiles) {
+      const filePath = join(eventsPath, file);
+      const event = await import(`file://${filePath}`);
+      const eventModule = event.default;
+
+      if (eventModule.once) {
+        client.once(eventModule.name, (...args) =>
+          eventModule.execute(...args)
+        );
+      } else {
+        client.on(eventModule.name, (...args) => eventModule.execute(...args));
+      }
+
+      console.log(`✅ 已載入事件: ${eventModule.name}`);
+    }
+  } catch (error) {
+    console.error("❌ 載入事件時發生錯誤:", error);
+    throw error;
   }
-
-  console.log(`✅ 已載入事件: ${event.name}`);
 }
 
 /**
  * 錯誤處理
  */
-process.on('unhandledRejection', error => {
-  console.error('❌ Unhandled promise rejection:', error);
+process.on("unhandledRejection", (error) => {
+  console.error("❌ Unhandled promise rejection:", error);
 });
 
-process.on('uncaughtException', error => {
-  console.error('❌ Uncaught exception:', error);
+process.on("uncaughtException", (error) => {
+  console.error("❌ Uncaught exception:", error);
   process.exit(1);
 });
 
 /**
  * 啟動 Bot
  */
-client.login(config.discord.token)
-  .then(() => {
-    console.log('🚀 Bot 正在啟動中...');
-  })
-  .catch(error => {
-    console.error('❌ Bot 登入失敗:', error);
+async function startBot() {
+  try {
+    console.log("🚀 Bot 正在啟動中...");
+
+    // 載入事件和指令
+    await loadEvents();
+    await loadCommands();
+
+    // 登入 Discord
+    await client.login(config.discord.token);
+  } catch (error) {
+    console.error("❌ Bot 啟動失敗:", error);
     process.exit(1);
-  });
+  }
+}
+
+// 啟動 Bot
+startBot();
