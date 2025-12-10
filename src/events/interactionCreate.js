@@ -1,4 +1,5 @@
 import { Events } from 'discord.js';
+import * as addMeetingHandlers from '../commands/add-meeting.js';
 
 export default {
   name: Events.InteractionCreate,
@@ -30,22 +31,47 @@ export default {
       }
     }
 
-    // 處理按鈕互動
-    if (interaction.isButton()) {
-      // 將在後續實作
-      console.log(`🔘 按鈕互動: ${interaction.customId}`);
-    }
-
-    // 處理選單互動
+    // 處理選單互動 (add-meeting)
     if (interaction.isStringSelectMenu()) {
-      // 將在後續實作
-      console.log(`📋 選單互動: ${interaction.customId}`);
+      if (interaction.customId === 'meeting_type') {
+        await addMeetingHandlers.handleTypeSelection(interaction);
+      } else if (interaction.customId === 'meeting_hour' || interaction.customId === 'meeting_minute') {
+        await addMeetingHandlers.handleTimeSelection(interaction);
+      }
     }
 
-    // 處理 Modal 提交
+    if (interaction.isUserSelectMenu()) {
+      if (interaction.customId === 'meeting_participants') {
+        await addMeetingHandlers.handleParticipantsSelection(interaction);
+      }
+    }
+
+    // 處理按鈕互動 (add-meeting)
+    if (interaction.isButton()) {
+      if (interaction.customId === 'meeting_show_modal') {
+        await addMeetingHandlers.showDetailsModal(interaction);
+      } else if (interaction.customId === 'meeting_confirm_create') {
+        // 取得儲存的資料並建立會議
+        await interaction.deferUpdate();
+        const userId = interaction.user.id;
+        const data = addMeetingHandlers.tempMeetingData.get(userId);
+        if (data) {
+          await addMeetingHandlers.createMeeting(interaction, data);
+        }
+      } else if (interaction.customId === 'meeting_cancel_create') {
+        await interaction.update({
+          content: '❌ 已取消建立會議',
+          embeds: [],
+          components: [],
+        });
+      }
+    }
+
+    // 處理 Modal 提交 (add-meeting)
     if (interaction.isModalSubmit()) {
-      // 將在後續實作
-      console.log(`📝 Modal 提交: ${interaction.customId}`);
+      if (interaction.customId === 'meeting_details_modal') {
+        await addMeetingHandlers.handleModalSubmit(interaction);
+      }
     }
   },
 };
