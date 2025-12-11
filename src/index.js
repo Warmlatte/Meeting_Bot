@@ -1,16 +1,7 @@
-import { Client, Collection, GatewayIntentBits } from "discord.js";
-import { readdir } from "fs/promises";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
+import { Client, Collection, Events, GatewayIntentBits, REST, Routes } from "discord.js";
 import config from "./config/env.js";
 
-// 取得當前檔案的目錄路徑 (ES Modules 中需要手動處理 __dirname)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-/**
- * 建立 Discord Client
- */
+// 建立 Discord Client
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -19,78 +10,49 @@ const client = new Client({
   ],
 });
 
-/**
- * 初始化指令集合
- */
+// 初始化指令集合
 client.commands = new Collection();
 
-/**
- * 載入指令
- */
-async function loadCommands() {
-  const commandsPath = join(__dirname, "commands");
+// 載入指令
+import addMeeting from "./commands/add-meeting.js";
 
+// 註冊指令到 client 和註冊陣列
+client.commands.set(addMeeting.data.name, addMeeting);
+
+// 建立指令註冊陣列
+const commands = [];
+commands.push(addMeeting.data.toJSON());
+
+// 載入事件處理器
+import ready from "./events/ready.js";
+import interactionCreate from "./events/interactionCreate.js";
+
+// 註冊事件
+client.once(Events.ClientReady, ready.execute);
+client.on(Events.InteractionCreate, interactionCreate.execute);
+
+// 設置 Discord REST API
+const rest = new REST({ version: "10" }).setToken(config.discord.token);
+
+// Bot 啟動時顯示成功訊息並註冊指令
+client.once(Events.ClientReady, async (readyClient) => {
   try {
-    const commandFiles = (await readdir(commandsPath)).filter((file) =>
-      file.endsWith(".js")
-    );
+    console.log(`✅ Bot 已啟動,登入為:${readyClient.user.tag}`);
 
-    for (const file of commandFiles) {
-      const filePath = join(commandsPath, file);
-      const command = await import(`file://${filePath}`);
-      const commandModule = command.default;
+    console.log(`開始註冊 ${commands.length} 個斜線指令...`);
 
-      if ("data" in commandModule && "execute" in commandModule) {
-        client.commands.set(commandModule.data.name, commandModule);
-        console.log(`✅ 已載入指令: ${commandModule.data.name}`);
-      } else {
-        console.warn(`⚠️ 指令 ${file} 缺少必要的 "data" 或 "execute" 屬性`);
-      }
-    }
+    // 註冊全域指令
+    const data = await rest.put(Routes.applicationCommands(client.user.id), {
+      body: commands,
+    });
+
+    console.log(`成功註冊 ${data.length} 個斜線指令!`);
   } catch (error) {
-    if (error.code === "ENOENT") {
-      console.log("⚠️ commands 目錄不存在,跳過指令載入");
-    } else {
-      console.error("❌ 載入指令時發生錯誤:", error);
-    }
+    console.error(`註冊指令時發生錯誤: ${error}`);
   }
-}
+});
 
-/**
- * 載入事件處理器
- */
-async function loadEvents() {
-  const eventsPath = join(__dirname, "events");
-
-  try {
-    const eventFiles = (await readdir(eventsPath)).filter((file) =>
-      file.endsWith(".js")
-    );
-
-    for (const file of eventFiles) {
-      const filePath = join(eventsPath, file);
-      const event = await import(`file://${filePath}`);
-      const eventModule = event.default;
-
-      if (eventModule.once) {
-        client.once(eventModule.name, (...args) =>
-          eventModule.execute(...args)
-        );
-      } else {
-        client.on(eventModule.name, (...args) => eventModule.execute(...args));
-      }
-
-      console.log(`✅ 已載入事件: ${eventModule.name}`);
-    }
-  } catch (error) {
-    console.error("❌ 載入事件時發生錯誤:", error);
-    throw error;
-  }
-}
-
-/**
- * 錯誤處理
- */
+// 錯誤處理
 process.on("unhandledRejection", (error) => {
   console.error("❌ Unhandled promise rejection:", error);
 });
@@ -100,24 +62,5 @@ process.on("uncaughtException", (error) => {
   process.exit(1);
 });
 
-/**
- * 啟動 Bot
- */
-async function startBot() {
-  try {
-    console.log("🚀 Bot 正在啟動中...");
-
-    // 載入事件和指令
-    await loadEvents();
-    await loadCommands();
-
-    // 登入 Discord
-    await client.login(config.discord.token);
-  } catch (error) {
-    console.error("❌ Bot 啟動失敗:", error);
-    process.exit(1);
-  }
-}
-
-// 啟動 Bot
-startBot();
+// 登入 Discord
+client.login(config.discord.token);
