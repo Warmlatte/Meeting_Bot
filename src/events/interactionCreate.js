@@ -35,8 +35,6 @@ export default {
     if (interaction.isStringSelectMenu()) {
       if (interaction.customId === 'meeting_type') {
         await addMeetingHandlers.handleTypeSelection(interaction);
-      } else if (interaction.customId === 'meeting_hour' || interaction.customId === 'meeting_minute') {
-        await addMeetingHandlers.handleTimeSelection(interaction);
       }
     }
 

@@ -45,10 +45,8 @@ class CalendarService {
           dateTime: endTime.toISOString(),
           timeZone: config.timezone,
         },
-        attendees: meetingData.participants.map(p => ({
-          email: `user${p.user_id}@discord.bot`,
-          displayName: p.name,
-        })),
+        // Discord Bot 無法獲取使用者的真實 email，因此不設定 attendees
+        // 參加者資訊已儲存在 description 的 JSON 部分
       };
 
       const response = await this.calendar.events.insert({

@@ -40,26 +40,6 @@ export default {
         { label: "線下會議", value: "offline", emoji: "🏢" },
       ]);
 
-    const hourSelect = new StringSelectMenuBuilder()
-      .setCustomId("meeting_hour")
-      .setPlaceholder("選擇小時")
-      .addOptions(
-        Array.from({ length: 24 }, (_, i) => ({
-          label: `${i.toString().padStart(2, "0")} 時`,
-          value: i.toString(),
-        }))
-      );
-
-    const minuteSelect = new StringSelectMenuBuilder()
-      .setCustomId("meeting_minute")
-      .setPlaceholder("選擇分鐘")
-      .addOptions([
-        { label: "00 分", value: "0" },
-        { label: "15 分", value: "15" },
-        { label: "30 分", value: "30" },
-        { label: "45 分", value: "45" },
-      ]);
-
     const userSelect = new UserSelectMenuBuilder()
       .setCustomId("meeting_participants")
       .setPlaceholder("選擇參加者 (可複選)")
@@ -76,8 +56,6 @@ export default {
       content: "📅 **新增會議** - 請填寫會議資訊:",
       components: [
         new ActionRowBuilder().addComponents(typeSelect),
-        new ActionRowBuilder().addComponents(hourSelect),
-        new ActionRowBuilder().addComponents(minuteSelect),
         new ActionRowBuilder().addComponents(userSelect),
         new ActionRowBuilder().addComponents(nextButton),
       ],
@@ -105,31 +83,6 @@ export async function handleTypeSelection(interaction) {
 
   await interaction.update({
     content: `✅ 已選擇: **${data.type}**\n📅 **新增會議** - 請繼續填寫:`,
-    components: interaction.message.components,
-  });
-}
-
-/**
- * 處理時間選擇
- */
-export async function handleTimeSelection(interaction) {
-  const userId = interaction.user.id;
-  const data = tempMeetingData.get(userId) || {};
-
-  if (interaction.customId === "meeting_hour") {
-    data.hour = interaction.values[0];
-  } else if (interaction.customId === "meeting_minute") {
-    data.minute = interaction.values[0];
-  }
-
-  tempMeetingData.set(userId, data);
-
-  const timeStr =
-    data.hour && data.minute
-      ? `${data.hour.padStart(2, "0")}:${data.minute.padStart(2, "0")}`
-      : "未設定";
-  await interaction.update({
-    content: `✅ 時間: **${timeStr}**\n📅 **新增會議** - 請繼續填寫:`,
     components: interaction.message.components,
   });
 }
@@ -165,11 +118,11 @@ export async function showDetailsModal(interaction) {
     .setCustomId("meeting_details_modal")
     .setTitle("會議詳細資訊");
 
-  const dateInput = new TextInputBuilder()
-    .setCustomId("meeting_date")
-    .setLabel("會議日期 (格式: YYYY-MM-DD 或 25/10/7)")
+  const dateTimeInput = new TextInputBuilder()
+    .setCustomId("meeting_datetime")
+    .setLabel("會議日期與時間 (格式: YYYY-MM-DD HH:MM)")
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder("例如: 2025-10-07 或 25/10/7")
+    .setPlaceholder("例如: 2025-12-15 14:00 或 25/12/15 14:00")
     .setRequired(true);
 
   const titleInput = new TextInputBuilder()
@@ -188,6 +141,14 @@ export async function showDetailsModal(interaction) {
     .setValue(data.location || "")
     .setRequired(true);
 
+  const durationInput = new TextInputBuilder()
+    .setCustomId("meeting_duration")
+    .setLabel("會議時長 (小時)")
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder("例如: 2 或 1.5")
+    .setValue("2")
+    .setRequired(true);
+
   const contentInput = new TextInputBuilder()
     .setCustomId("meeting_content")
     .setLabel("會議內容")
@@ -197,9 +158,10 @@ export async function showDetailsModal(interaction) {
     .setRequired(true);
 
   modal.addComponents(
-    new ActionRowBuilder().addComponents(dateInput),
+    new ActionRowBuilder().addComponents(dateTimeInput),
     new ActionRowBuilder().addComponents(titleInput),
     new ActionRowBuilder().addComponents(locationInput),
+    new ActionRowBuilder().addComponents(durationInput),
     new ActionRowBuilder().addComponents(contentInput)
   );
 
@@ -214,15 +176,25 @@ export async function handleModalSubmit(interaction) {
   const data = tempMeetingData.get(userId) || {};
 
   // 取得 Modal 輸入
-  data.date = Parser.parseDate(
-    interaction.fields.getTextInputValue("meeting_date")
-  );
+  const dateTimeStr = interaction.fields.getTextInputValue("meeting_datetime");
+
+  // 解析日期時間 (格式: "2025-12-15 14:00" 或 "25/12/15 14:00")
+  const dateTimeParts = dateTimeStr.trim().split(/\s+/);
+  if (dateTimeParts.length < 2) {
+    const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
+      "資料驗證失敗",
+      ["日期時間格式錯誤，請使用格式: YYYY-MM-DD HH:MM 或 25/12/15 14:00"]
+    );
+    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    return;
+  }
+
+  data.date = Parser.parseDate(dateTimeParts[0]);
+  data.time = Parser.parseTime(dateTimeParts[1]);
   data.title = interaction.fields.getTextInputValue("meeting_title");
   data.location = interaction.fields.getTextInputValue("meeting_location");
+  data.duration = parseFloat(interaction.fields.getTextInputValue("meeting_duration")) || 2;
   data.content = interaction.fields.getTextInputValue("meeting_content");
-  data.time = `${(data.hour || "0").padStart(2, "0")}:${(
-    data.minute || "0"
-  ).padStart(2, "0")}`;
 
   // 驗證資料
   const meetingErrors = Validator.validateMeeting(data);
@@ -244,7 +216,7 @@ export async function handleModalSubmit(interaction) {
 
   const calendarService = new CalendarService();
   const startTime = Parser.combineDateTime(data.date, data.time);
-  const endTime = startTime.add(2, "hour");
+  const endTime = startTime.add(data.duration || 2, "hour");
 
   const conflictCheck = await calendarService.checkConflicts(
     startTime.toISOString(),
