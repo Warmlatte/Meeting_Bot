@@ -8,6 +8,7 @@ import {
   TextInputStyle,
   ButtonBuilder,
   ButtonStyle,
+  MessageFlags,
 } from "discord.js";
 import CalendarService from "../services/calendar.js";
 import Parser from "../services/parser.js";
@@ -59,7 +60,7 @@ export default {
         new ActionRowBuilder().addComponents(userSelect),
         new ActionRowBuilder().addComponents(nextButton),
       ],
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   },
 };
@@ -185,7 +186,7 @@ export async function handleModalSubmit(interaction) {
       "資料驗證失敗",
       ["日期時間格式錯誤，請使用格式: YYYY-MM-DD HH:MM 或 25/12/15 14:00"]
     );
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
     return;
   }
 
@@ -206,13 +207,13 @@ export async function handleModalSubmit(interaction) {
       "資料驗證失敗",
       allErrors
     );
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
     tempMeetingData.delete(userId);
     return;
   }
 
   // 檢查時間衝突
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const calendarService = new CalendarService();
   const startTime = Parser.combineDateTime(data.date, data.time);
@@ -268,7 +269,7 @@ export async function createMeeting(interaction, data) {
     if (interaction.deferred) {
       await interaction.editReply({ embeds: [confirmEmbed], components: [] });
     } else {
-      await interaction.reply({ embeds: [confirmEmbed], ephemeral: true });
+      await interaction.reply({ embeds: [confirmEmbed], flags: MessageFlags.Ephemeral });
     }
 
     tempMeetingData.delete(interaction.user.id);
@@ -282,7 +283,7 @@ export async function createMeeting(interaction, data) {
     if (interaction.deferred) {
       await interaction.editReply({ embeds: [errorEmbed], components: [] });
     } else {
-      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+      await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
     }
   }
 }

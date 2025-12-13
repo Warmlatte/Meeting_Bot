@@ -1,4 +1,4 @@
-import { Events } from 'discord.js';
+import { Events, MessageFlags } from 'discord.js';
 import * as addMeetingHandlers from '../commands/add-meeting.js';
 
 export default {
@@ -20,7 +20,7 @@ export default {
 
         const errorMessage = {
           content: '執行指令時發生錯誤!',
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         };
 
         if (interaction.replied || interaction.deferred) {
