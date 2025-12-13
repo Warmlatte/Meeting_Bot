@@ -65,11 +65,11 @@ class EmbedBuilderUtil {
       const startTime = dayjs(conflictMeeting.start.dateTime);
       const endTime = dayjs(conflictMeeting.end.dateTime);
 
-      const participantNames = conflict.participants.map(p => `<@${p.user_id}>`).join(', ');
+      const participantNames = conflict.participants.map(p => p.name || `<@${p.user_id}>`).join(', ');
       const timeRange = `${startTime.format('HH:mm')}-${endTime.format('HH:mm')}`;
 
       embed.addFields({
-        name: `${participantNames}`,
+        name: `👤 ${participantNames}`,
         value: `• ${timeRange} | ${conflictMeeting.summary}`,
         inline: false
       });
