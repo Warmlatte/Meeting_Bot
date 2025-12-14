@@ -66,6 +66,27 @@ export default {
 };
 
 /**
+ * 產生包含已選擇資料的訊息內容
+ */
+function generateStatusMessage(data) {
+  let message = "📅 **新增會議** - 請填寫會議資訊:\n\n";
+
+  if (data.type) {
+    message += `✅ **會議類型**: ${data.type}\n`;
+  }
+
+  if (data.participants && data.participants.length > 0) {
+    message += `✅ **參加者**: ${data.participants.length} 位 (${data.participants.map(p => p.name).join(', ')})\n`;
+  }
+
+  if (!data.type || !data.participants || data.participants.length === 0) {
+    message += "⏳ 請繼續選擇...";
+  }
+
+  return message;
+}
+
+/**
  * 處理會議類型選擇
  */
 export async function handleTypeSelection(interaction) {
@@ -83,7 +104,7 @@ export async function handleTypeSelection(interaction) {
   tempMeetingData.set(userId, data);
 
   await interaction.update({
-    content: `✅ 已選擇: **${data.type}**\n📅 **新增會議** - 請繼續填寫:`,
+    content: generateStatusMessage(data),
     components: interaction.message.components,
   });
 }
@@ -103,7 +124,7 @@ export async function handleParticipantsSelection(interaction) {
   tempMeetingData.set(userId, data);
 
   await interaction.update({
-    content: `✅ 已選擇 **${data.participants.length}** 位參加者\n📅 **新增會議** - 請繼續填寫:`,
+    content: generateStatusMessage(data),
     components: interaction.message.components,
   });
 }
@@ -217,6 +238,18 @@ export async function handleModalSubmit(interaction) {
 
   const calendarService = new CalendarService();
   const startTime = Parser.combineDateTime(data.date, data.time);
+
+  // 驗證日期時間是否有效
+  if (!startTime.isValid()) {
+    const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
+      "日期時間格式錯誤",
+      [`無法解析日期時間: ${data.date} ${data.time}`, "請使用格式: YYYY-MM-DD HH:MM (例如: 2025-12-15 14:00)"]
+    );
+    await interaction.editReply({ embeds: [errorEmbed] });
+    tempMeetingData.delete(userId);
+    return;
+  }
+
   const endTime = startTime.add(data.duration || 2, "hour");
 
   const conflictCheck = await calendarService.checkConflicts(

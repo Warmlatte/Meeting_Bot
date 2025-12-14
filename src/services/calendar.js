@@ -46,7 +46,19 @@ class CalendarService {
           timeZone: config.timezone,
         },
         // Discord Bot 無法獲取使用者的真實 email，因此不設定 attendees
-        // 參加者資訊已儲存在 description 的 JSON 部分
+        // 參加者資訊已儲存在 extendedProperties 中
+        extendedProperties: {
+          private: {
+            discord_info: JSON.stringify({
+              guild_id: meetingData.guild_id,
+              channel_id: meetingData.channel_id,
+              creator_id: meetingData.creator_id,
+              message_id: meetingData.message_id || null,
+              meeting_type: meetingData.type,
+              participants: meetingData.participants || [],
+            }),
+          },
+        },
       };
 
       const response = await this.calendar.events.insert({
@@ -138,6 +150,23 @@ class CalendarService {
         };
       }
 
+      // 更新 Discord 資訊 (使用 extendedProperties)
+      if (meetingData.guild_id || meetingData.channel_id || meetingData.creator_id || meetingData.participants || meetingData.type) {
+        const currentDiscordInfo = this.getDiscordInfo(event);
+        event.extendedProperties = {
+          private: {
+            discord_info: JSON.stringify({
+              guild_id: meetingData.guild_id || currentDiscordInfo.guild_id,
+              channel_id: meetingData.channel_id || currentDiscordInfo.channel_id,
+              creator_id: meetingData.creator_id || currentDiscordInfo.creator_id,
+              message_id: meetingData.message_id || currentDiscordInfo.message_id,
+              meeting_type: meetingData.type || currentDiscordInfo.meeting_type,
+              participants: meetingData.participants || currentDiscordInfo.participants || [],
+            }),
+          },
+        };
+      }
+
       const response = await this.calendar.events.update({
         calendarId: this.calendarId,
         eventId: eventId,
@@ -172,6 +201,27 @@ class CalendarService {
   }
 
   /**
+   * 從事件中取得 Discord 資訊
+   * @param {Object} event - Google Calendar 事件物件
+   * @returns {Object} - Discord 資訊
+   */
+  getDiscordInfo(event) {
+    try {
+      // 優先從 extendedProperties 讀取
+      if (event.extendedProperties?.private?.discord_info) {
+        return JSON.parse(event.extendedProperties.private.discord_info);
+      }
+
+      // 向下相容：從 description 解析 (舊格式)
+      const parsedData = this.parseDescription(event.description);
+      return parsedData.discordInfo || {};
+    } catch (error) {
+      console.error('❌ 解析 Discord 資訊失敗:', error);
+      return {};
+    }
+  }
+
+  /**
    * 檢查會議時間衝突
    * @param {string} startTime - 開始時間 (ISO 格式)
    * @param {string} endTime - 結束時間 (ISO 格式)
@@ -184,12 +234,12 @@ class CalendarService {
       const conflicts = [];
 
       for (const meeting of meetings) {
-        const meetingInfo = this.parseDescription(meeting.description);
-        if (!meetingInfo.discordInfo) continue;
+        const discordInfo = this.getDiscordInfo(meeting);
+        if (!discordInfo || !discordInfo.participants) continue;
 
         // 檢查是否有相同參加者
         const conflictingParticipants = participants.filter(p =>
-          meetingInfo.discordInfo.participants.some(mp => mp.user_id === p.user_id)
+          discordInfo.participants.some(mp => mp.user_id === p.user_id)
         );
 
         if (conflictingParticipants.length > 0) {
@@ -216,23 +266,11 @@ class CalendarService {
    * @returns {string} - 格式化的描述
    */
   formatDescription(data) {
-    const discordInfo = {
-      guild_id: data.guild_id,
-      channel_id: data.channel_id,
-      creator_id: data.creator_id,
-      message_id: data.message_id || null,
-      meeting_type: data.type,
-      participants: data.participants || [],
-    };
-
     return `=== 會議內容 ===
 ${data.content || '無'}
 
 === 參加者 ===
-${data.participants ? data.participants.map(p => `@${p.name}`).join(' ') : '無'}
-
-=== Discord 資訊 (JSON) ===
-${JSON.stringify(discordInfo, null, 2)}`;
+${data.participants ? data.participants.map(p => `@${p.name}`).join(' ') : '無'}`;
   }
 
   /**
