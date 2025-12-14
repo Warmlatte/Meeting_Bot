@@ -299,10 +299,23 @@ export async function createMeeting(interaction, data) {
       event
     );
 
+    // 先給建立者一個私人確認訊息（如果是 deferred）
     if (interaction.deferred) {
-      await interaction.editReply({ embeds: [confirmEmbed], components: [] });
-    } else {
-      await interaction.reply({ embeds: [confirmEmbed], flags: MessageFlags.Ephemeral });
+      await interaction.editReply({
+        content: '✅ 會議建立中...',
+        components: []
+      });
+    }
+
+    // 在頻道發送公開的會議建立成功訊息
+    await interaction.channel.send({ embeds: [confirmEmbed] });
+
+    // 如果不是 deferred，給建立者一個私人確認
+    if (!interaction.deferred) {
+      await interaction.reply({
+        content: '✅ 會議已成功建立！',
+        flags: MessageFlags.Ephemeral
+      });
     }
 
     tempMeetingData.delete(interaction.user.id);
@@ -313,6 +326,7 @@ export async function createMeeting(interaction, data) {
       error.message
     );
 
+    // 錯誤訊息保持私人（ephemeral）
     if (interaction.deferred) {
       await interaction.editReply({ embeds: [errorEmbed], components: [] });
     } else {

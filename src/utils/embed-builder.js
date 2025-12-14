@@ -1,5 +1,6 @@
 import { EmbedBuilder } from 'discord.js';
 import CONSTANTS from '../config/constants.js';
+import { getRandomMeetingSuccessImage } from '../config/images.js';
 import dayjs from 'dayjs';
 
 /**
@@ -16,7 +17,7 @@ class EmbedBuilderUtil {
     const startTime = dayjs(event.start.dateTime);
     const endTime = dayjs(event.end.dateTime);
 
-    return new EmbedBuilder()
+    const embed = new EmbedBuilder()
       .setColor(CONSTANTS.COLORS.SUCCESS)
       .setTitle('✅ 會議建立成功')
       .addFields(
@@ -30,6 +31,14 @@ class EmbedBuilderUtil {
       )
       .setTimestamp()
       .setFooter({ text: 'Meeting Bot' });
+
+    // 隨機加入圖片（如果有配置）
+    const randomImage = getRandomMeetingSuccessImage();
+    if (randomImage) {
+      embed.setImage(randomImage);
+    }
+
+    return embed;
   }
 
   /**
