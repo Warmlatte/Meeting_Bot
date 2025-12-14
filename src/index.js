@@ -1,4 +1,11 @@
-import { Client, Collection, Events, GatewayIntentBits, REST, Routes } from "discord.js";
+import {
+  Client,
+  Collection,
+  Events,
+  GatewayIntentBits,
+  REST,
+  Routes,
+} from "discord.js";
 import config from "./config/env.js";
 
 // 建立 Discord Client
@@ -15,13 +22,16 @@ client.commands = new Collection();
 
 // 載入指令
 import addMeeting from "./commands/add-meeting.js";
+import listMeetings from "./commands/list-meetings.js";
 
 // 註冊指令到 client 和註冊陣列
 client.commands.set(addMeeting.data.name, addMeeting);
+client.commands.set(listMeetings.data.name, listMeetings);
 
 // 建立指令註冊陣列
 const commands = [];
 commands.push(addMeeting.data.toJSON());
+commands.push(listMeetings.data.toJSON());
 
 // 載入事件處理器
 import ready from "./events/ready.js";

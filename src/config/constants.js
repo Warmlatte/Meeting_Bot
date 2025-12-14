@@ -24,6 +24,7 @@ const CONSTANTS = {
     ERROR: 0xff0000,    // 紅色
     INFO: 0x0099ff,     // 藍色
     WARNING: 0xffaa00,  // 橙色
+    PRIMARY: 0x5865f2,  // Discord 紫色
   },
 };
 

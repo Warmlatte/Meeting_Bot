@@ -293,6 +293,36 @@ ${data.participants ? data.participants.map(p => `@${p.name}`).join(' ') : '無'
       discordInfo: jsonMatch ? JSON.parse(jsonMatch[1]) : null,
     };
   }
+
+  /**
+   * 解析 Google Calendar 事件為會議資料
+   * @param {Object} event - Google Calendar 事件
+   * @returns {Object} - 解析後的會議資料
+   */
+  parseMeetingEvent(event) {
+    // 取得 Discord 資訊（從 extendedProperties 或 description）
+    const discordInfo = this.getDiscordInfo(event);
+
+    // 從 summary 中提取會議類型和名稱
+    const summaryMatch = event.summary?.match(/\[(.*?)\]\s*(.*)/);
+    const meetingType = summaryMatch ? summaryMatch[1] : '未分類';
+    const meetingTitle = summaryMatch ? summaryMatch[2] : event.summary;
+
+    // 解析 description 取得會議內容
+    const parsedDesc = this.parseDescription(event.description);
+
+    return {
+      id: event.id,
+      title: meetingTitle,
+      type: meetingType,
+      location: event.location || '未指定',
+      startTime: event.start.dateTime || event.start.date,
+      endTime: event.end.dateTime || event.end.date,
+      participants: discordInfo?.participants || [],
+      content: parsedDesc.content,
+      discordInfo: discordInfo,
+    };
+  }
 }
 
 export default CalendarService;

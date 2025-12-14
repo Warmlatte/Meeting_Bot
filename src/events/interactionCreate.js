@@ -1,5 +1,6 @@
 import { Events, MessageFlags } from 'discord.js';
 import * as addMeetingHandlers from '../commands/add-meeting.js';
+import * as listMeetingHandlers from '../commands/list-meetings.js';
 
 export default {
   name: Events.InteractionCreate,
@@ -31,10 +32,12 @@ export default {
       }
     }
 
-    // 處理選單互動 (add-meeting)
+    // 處理選單互動
     if (interaction.isStringSelectMenu()) {
       if (interaction.customId === 'meeting_type') {
         await addMeetingHandlers.handleTypeSelection(interaction);
+      } else if (interaction.customId === 'meeting_list_filter') {
+        await listMeetingHandlers.handleFilterSelection(interaction);
       }
     }
 
@@ -44,7 +47,7 @@ export default {
       }
     }
 
-    // 處理按鈕互動 (add-meeting)
+    // 處理按鈕互動
     if (interaction.isButton()) {
       if (interaction.customId === 'meeting_show_modal') {
         await addMeetingHandlers.showDetailsModal(interaction);
@@ -62,6 +65,8 @@ export default {
           embeds: [],
           components: [],
         });
+      } else if (interaction.customId === 'meeting_list_prev' || interaction.customId === 'meeting_list_next') {
+        await listMeetingHandlers.handlePaginationButton(interaction);
       }
     }
 
