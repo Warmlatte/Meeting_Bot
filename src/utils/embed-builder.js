@@ -177,6 +177,78 @@ class EmbedBuilderUtil {
       .setTimestamp()
       .setFooter({ text: 'Meeting Bot' });
   }
+
+  /**
+   * 建立會議提醒 Embed (DM 用)
+   * @param {Object} meeting - 會議資料
+   * @param {string} reminderType - 提醒類型 ('2h' 或 '1d')
+   * @returns {EmbedBuilder}
+   */
+  static createReminderEmbed(meeting, reminderType) {
+    const startTime = dayjs(meeting.startTime);
+    const endTime = dayjs(meeting.endTime);
+
+    const reminderTexts = {
+      '2h': '⏰ 2 小時後有會議',
+      '1d': '📅 明天有會議',
+    };
+
+    const embed = new EmbedBuilder()
+      .setColor(CONSTANTS.COLORS.WARNING)
+      .setTitle(reminderTexts[reminderType] || '🔔 會議提醒')
+      .addFields(
+        { name: '📋 會議名稱', value: meeting.title, inline: false },
+        { name: '📅 日期', value: startTime.format('YYYY-MM-DD (dddd)'), inline: true },
+        { name: '🕐 時間', value: `${startTime.format('HH:mm')} - ${endTime.format('HH:mm')}`, inline: true },
+        { name: '📍 地點', value: meeting.location, inline: true }
+      )
+      .setTimestamp();
+
+    // 會議內容
+    if (meeting.content) {
+      // 限制長度避免過長
+      const displayContent = meeting.content.length > 200
+        ? meeting.content.substring(0, 200) + '...'
+        : meeting.content;
+      embed.addFields({ name: '📝 會議內容', value: displayContent, inline: false });
+    }
+
+    // 參加者
+    if (meeting.participants && meeting.participants.length > 0) {
+      const participantNames = meeting.participants
+        .map(p => `• ${p.name}`)
+        .join('\n');
+      embed.addFields({
+        name: `👥 參加者 (${meeting.participants.length})`,
+        value: participantNames,
+        inline: false
+      });
+    }
+
+    embed.setFooter({ text: 'Meeting Bot 提醒服務' });
+
+    return embed;
+  }
+
+  /**
+   * 建立頻道提醒訊息內容
+   * @param {Object} meeting - 會議資料
+   * @param {string} reminderType - 提醒類型
+   * @returns {string}
+   */
+  static createChannelReminderText(meeting, reminderType) {
+    const startTime = dayjs(meeting.startTime);
+    const participantMentions = meeting.participants
+      .map(p => `<@${p.user_id}>`)
+      .join(' ');
+
+    const timeTexts = {
+      '2h': `2 小時後 (${startTime.format('HH:mm')})`,
+      '1d': `明天 ${startTime.format('HH:mm')}`,
+    };
+
+    return `🔔 **會議提醒**\n\n${participantMentions}\n\n${timeTexts[reminderType]} 有【${meeting.title}】會議\n📍 地點: ${meeting.location}`;
+  }
 }
 
 export default EmbedBuilderUtil;
