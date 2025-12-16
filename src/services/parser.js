@@ -9,11 +9,19 @@ dayjs.extend(customParseFormat);
 class Parser {
   /**
    * 解析日期格式
-   * 支援: 25/10/7, 25/10/07, 2025.10.07, 2025-10-07
+   * 支援: 25/10/7, 25/10/07, 2025.10.07, 2025-10-07, 20251216
    * @param {string} dateStr - 日期字串
    * @returns {string} - 標準格式日期 (YYYY-MM-DD)
    */
   static parseDate(dateStr) {
+    // 處理 20251216 (8位數字格式 YYYYMMDD)
+    if (/^\d{8}$/.test(dateStr)) {
+      const year = dateStr.substring(0, 4);
+      const month = dateStr.substring(4, 6);
+      const day = dateStr.substring(6, 8);
+      return `${year}-${month}-${day}`;
+    }
+
     // 處理 25/10/7 或 25/10/07
     if (/^\d{2}\/\d{1,2}\/\d{1,2}$/.test(dateStr)) {
       const [year, month, day] = dateStr.split('/');
