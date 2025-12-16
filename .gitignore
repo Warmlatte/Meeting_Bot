@@ -17,3 +17,7 @@ npm-debug.log*
 
 # 專案內部文件
 CLAUDE.md
+
+# 資料檔案
+data/
+!data/.gitkeep

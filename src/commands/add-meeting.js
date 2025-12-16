@@ -318,6 +318,13 @@ export async function createMeeting(interaction, data) {
       });
     }
 
+    // 觸發布告欄即時更新
+    const scheduler = interaction.client.scheduler;
+    if (scheduler) {
+      await scheduler.triggerBoardUpdate();
+      console.log('[AddMeeting] 已觸發布告欄更新');
+    }
+
     tempMeetingData.delete(interaction.user.id);
   } catch (error) {
     console.error("建立會議失敗:", error);

@@ -2,6 +2,10 @@ import { EmbedBuilder } from 'discord.js';
 import CONSTANTS from '../config/constants.js';
 import { getRandomMeetingSuccessImage } from '../config/images.js';
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek.js';
+
+// 載入 dayjs 插件
+dayjs.extend(isoWeek);
 
 /**
  * Embed 訊息建構器
@@ -248,6 +252,144 @@ class EmbedBuilderUtil {
     };
 
     return `🔔 **會議提醒**\n\n${participantMentions}\n\n${timeTexts[reminderType]} 有【${meeting.title}】會議\n📍 地點: ${meeting.location}`;
+  }
+
+  /**
+   * 建立今日會議布告欄 Embed
+   * @param {Array} meetings - 今日會議列表
+   * @returns {EmbedBuilder}
+   */
+  static createTodayBoardEmbed(meetings) {
+    const today = dayjs();
+    const embed = new EmbedBuilder()
+      .setColor(CONSTANTS.COLORS.PRIMARY)
+      .setTitle(`📅 今日會議 (${today.format('YYYY-MM-DD')})`)
+      .setTimestamp();
+
+    if (meetings.length === 0) {
+      embed.setDescription('今天沒有會議 🎉');
+      embed.setFooter({ text: 'Meeting Bot • 每日 00:00 自動更新' });
+      return embed;
+    }
+
+    let description = '';
+
+    // 按時間排序
+    const sortedMeetings = meetings.sort((a, b) => {
+      return dayjs(a.startTime).isBefore(dayjs(b.startTime)) ? -1 : 1;
+    });
+
+    for (const meeting of sortedMeetings) {
+      const startTime = dayjs(meeting.startTime);
+      const endTime = dayjs(meeting.endTime);
+
+      // 判斷會議是否已結束
+      const isPast = dayjs().isAfter(endTime);
+      const statusEmoji = isPast ? '✅' : '🕐';
+
+      description += `\n${statusEmoji} **${startTime.format('HH:mm')}** | ${meeting.type} | **${meeting.title}**\n`;
+      description += `   📍 ${meeting.location}\n`;
+
+      if (meeting.participants.length > 0) {
+        const participantMentions = meeting.participants
+          .map(p => `<@${p.user_id}>`)
+          .join(' ');
+        description += `   👥 ${participantMentions}\n`;
+      }
+
+      description += '\n';
+    }
+
+    embed.setDescription(description);
+    embed.setFooter({
+      text: `共 ${meetings.length} 場會議 • Meeting Bot • 每日 00:00 自動更新`
+    });
+
+    return embed;
+  }
+
+  /**
+   * 建立本週會議布告欄 Embed
+   * @param {Array} meetings - 本週會議列表
+   * @returns {EmbedBuilder}
+   */
+  static createWeekBoardEmbed(meetings) {
+    const weekStart = dayjs().startOf('isoWeek');
+    const weekEnd = dayjs().endOf('isoWeek');
+
+    const embed = new EmbedBuilder()
+      .setColor(CONSTANTS.COLORS.PRIMARY)
+      .setTitle(`📆 本週會議 (${weekStart.format('MM/DD')} - ${weekEnd.format('MM/DD')})`)
+      .setTimestamp();
+
+    if (meetings.length === 0) {
+      embed.setDescription('本週沒有會議 🎉');
+      embed.setFooter({ text: 'Meeting Bot • 每日 00:00 自動更新' });
+      return embed;
+    }
+
+    // 按日期分組
+    const meetingsByDay = {};
+
+    for (const meeting of meetings) {
+      const startTime = dayjs(meeting.startTime);
+      const dayKey = startTime.format('YYYY-MM-DD');
+
+      if (!meetingsByDay[dayKey]) {
+        meetingsByDay[dayKey] = [];
+      }
+
+      meetingsByDay[dayKey].push(meeting);
+    }
+
+    let description = '';
+
+    // 按日期順序顯示
+    const sortedDays = Object.keys(meetingsByDay).sort();
+
+    for (const dayKey of sortedDays) {
+      const date = dayjs(dayKey);
+      const dayMeetings = meetingsByDay[dayKey];
+
+      // 日期標題
+      const dayOfWeek = ['日', '一', '二', '三', '四', '五', '六'][date.day()];
+      const isToday = date.isSame(dayjs(), 'day');
+      const dayTitle = isToday
+        ? `【${date.format('MM/DD')} 週${dayOfWeek}】 ⭐ 今天`
+        : `【${date.format('MM/DD')} 週${dayOfWeek}】`;
+
+      description += `\n**${dayTitle}**\n`;
+
+      // 排序會議
+      const sortedMeetings = dayMeetings.sort((a, b) => {
+        return dayjs(a.startTime).isBefore(dayjs(b.startTime)) ? -1 : 1;
+      });
+
+      for (const meeting of sortedMeetings) {
+        const startTime = dayjs(meeting.startTime);
+
+        description += `🕐 ${startTime.format('HH:mm')} | ${meeting.type} | ${meeting.title}\n`;
+        description += `   📍 ${meeting.location}\n`;
+
+        if (meeting.participants.length > 0 && meeting.participants.length <= 5) {
+          const participantMentions = meeting.participants
+            .map(p => `<@${p.user_id}>`)
+            .join(' ');
+          description += `   👥 ${participantMentions}\n`;
+        } else if (meeting.participants.length > 5) {
+          description += `   👥 ${meeting.participants.length} 位參加者\n`;
+        }
+
+        description += '\n';
+      }
+    }
+
+    embed.setDescription(description);
+    embed.setFooter({
+      text: `共 ${meetings.length} 場會議 • Meeting Bot • 每日 00:00 自動更新`
+    });
+
+    return embed;
   }
 }
 
