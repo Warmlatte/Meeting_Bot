@@ -53,8 +53,9 @@ class SendRemindersJob {
     const startTime = dayjs(meeting.startTime);
     const minutesUntilStart = startTime.diff(now, 'minute');
 
-    // 2 小時前提醒 (110-130 分鐘之間,考慮任務執行間隔)
-    if (minutesUntilStart >= 110 && minutesUntilStart <= 130) {
+    // 2 小時前提醒 (100-140 分鐘之間,考慮任務執行間隔)
+    // 約 1 小時 40 分鐘 ~ 2 小時 20 分鐘
+    if (minutesUntilStart >= 100 && minutesUntilStart <= 140) {
       await this.sendReminder(meeting, '2h');
     }
   }
