@@ -8,6 +8,7 @@ import {
 import CalendarService from '../services/calendar.js';
 import EmbedBuilderUtil from '../utils/embed-builder.js';
 import CONSTANTS from '../config/constants.js';
+import { getRandomMeetingCancelSuccessImage } from '../config/images.js';
 import dayjs from 'dayjs';
 
 export default {
@@ -132,10 +133,28 @@ export async function handleCancelConfirm(interaction, meetingId) {
       )
       .setTimestamp();
 
+    // 加入隨機圖片
+    const randomImage = getRandomMeetingCancelSuccessImage();
+    if (randomImage) {
+      successEmbed.setImage(randomImage);
+    }
+
+    // 先給取消者一個私人確認訊息
     await interaction.editReply({
-      embeds: [successEmbed],
-      components: [],
+      content: '✅ 會議已成功取消！',
+      embeds: [],
+      components: []
     });
+
+    // 在頻道發送公開的會議取消成功訊息
+    await interaction.channel.send({ embeds: [successEmbed] });
+
+    // 觸發布告欄即時更新
+    const scheduler = interaction.client.scheduler;
+    if (scheduler) {
+      await scheduler.triggerBoardUpdate();
+      console.log('[CancelMeeting] 已觸發布告欄更新');
+    }
 
     console.log(`[CancelMeeting] ✅ 會議已取消: ${meeting.title} (ID: ${meetingId})`);
   } catch (error) {

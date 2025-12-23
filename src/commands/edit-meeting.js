@@ -15,6 +15,7 @@ import Parser from '../services/parser.js';
 import Validator from '../utils/validator.js';
 import EmbedBuilderUtil from '../utils/embed-builder.js';
 import CONSTANTS from '../config/constants.js';
+import { getRandomMeetingEditSuccessImage } from '../config/images.js';
 import dayjs from 'dayjs';
 
 // 儲存編輯中的會議資料
@@ -381,7 +382,28 @@ export async function handleModalSubmit(interaction) {
     confirmEmbed.setTitle('✅ 會議更新成功');
     confirmEmbed.setColor(CONSTANTS.COLORS.SUCCESS);
 
-    await interaction.editReply({ embeds: [confirmEmbed] });
+    // 加入隨機圖片
+    const randomImage = getRandomMeetingEditSuccessImage();
+    if (randomImage) {
+      confirmEmbed.setImage(randomImage);
+    }
+
+    // 先給編輯者一個私人確認訊息
+    await interaction.editReply({
+      content: '✅ 會議已成功更新！',
+      embeds: [],
+      components: []
+    });
+
+    // 在頻道發送公開的會議更新成功訊息
+    await interaction.channel.send({ embeds: [confirmEmbed] });
+
+    // 觸發布告欄即時更新
+    const scheduler = interaction.client.scheduler;
+    if (scheduler) {
+      await scheduler.triggerBoardUpdate();
+      console.log('[EditMeeting] 已觸發布告欄更新');
+    }
 
     // 清除編輯資料
     editingMeetings.delete(userId);

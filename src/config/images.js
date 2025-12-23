@@ -1,9 +1,10 @@
 /**
- * 會議建立成功訊息的圖片 URL 配置
- * 新增圖片時，只需在 MEETING_SUCCESS_IMAGES 陣列中加入新的 URL
+ * 會議相關訊息的圖片 URL 配置
+ * 新增圖片時，只需在對應的陣列中加入新的 URL
  */
 
-const MEETING_SUCCESS_IMAGES = [
+// 會議建立成功圖片庫
+const MEETING_CREATE_SUCCESS_IMAGES = [
   "https://i.pinimg.com/736x/17/3c/4d/173c4d76b6e991848463e5bf3e5348dc.jpg",
   "https://i.pinimg.com/736x/f0/8b/c4/f08bc4dfe3291afc310a664cb444a8f8.jpg",
   "https://i.pinimg.com/736x/14/03/da/1403da97a66a72a7674466f9cca2286c.jpg",
@@ -15,20 +16,60 @@ const MEETING_SUCCESS_IMAGES = [
   "https://i.pinimg.com/736x/de/52/e6/de52e6bdd91834db7bed06aadaabd94d.jpg",
 ];
 
+// 會議編輯成功圖片庫
+const MEETING_EDIT_SUCCESS_IMAGES = [
+  // 請在這裡新增編輯成功的圖片 URL
+];
+
+// 會議取消成功圖片庫
+const MEETING_CANCEL_SUCCESS_IMAGES = [
+  // 請在這裡新增取消成功的圖片 URL
+];
+
 /**
- * 隨機取得一張會議成功圖片 URL
+ * 隨機取得一張會議建立成功圖片 URL
  * @returns {string|null} - 隨機圖片 URL，如果陣列為空則回傳 null
  */
 export function getRandomMeetingSuccessImage() {
-  if (MEETING_SUCCESS_IMAGES.length === 0) {
+  if (MEETING_CREATE_SUCCESS_IMAGES.length === 0) {
     return null;
   }
 
-  const randomIndex = Math.floor(Math.random() * MEETING_SUCCESS_IMAGES.length);
-  return MEETING_SUCCESS_IMAGES[randomIndex];
+  const randomIndex = Math.floor(Math.random() * MEETING_CREATE_SUCCESS_IMAGES.length);
+  return MEETING_CREATE_SUCCESS_IMAGES[randomIndex];
+}
+
+/**
+ * 隨機取得一張會議編輯成功圖片 URL
+ * @returns {string|null} - 隨機圖片 URL，如果陣列為空則回傳 null
+ */
+export function getRandomMeetingEditSuccessImage() {
+  if (MEETING_EDIT_SUCCESS_IMAGES.length === 0) {
+    return null;
+  }
+
+  const randomIndex = Math.floor(Math.random() * MEETING_EDIT_SUCCESS_IMAGES.length);
+  return MEETING_EDIT_SUCCESS_IMAGES[randomIndex];
+}
+
+/**
+ * 隨機取得一張會議取消成功圖片 URL
+ * @returns {string|null} - 隨機圖片 URL，如果陣列為空則回傳 null
+ */
+export function getRandomMeetingCancelSuccessImage() {
+  if (MEETING_CANCEL_SUCCESS_IMAGES.length === 0) {
+    return null;
+  }
+
+  const randomIndex = Math.floor(Math.random() * MEETING_CANCEL_SUCCESS_IMAGES.length);
+  return MEETING_CANCEL_SUCCESS_IMAGES[randomIndex];
 }
 
 export default {
-  MEETING_SUCCESS_IMAGES,
+  MEETING_CREATE_SUCCESS_IMAGES,
+  MEETING_EDIT_SUCCESS_IMAGES,
+  MEETING_CANCEL_SUCCESS_IMAGES,
   getRandomMeetingSuccessImage,
+  getRandomMeetingEditSuccessImage,
+  getRandomMeetingCancelSuccessImage,
 };
