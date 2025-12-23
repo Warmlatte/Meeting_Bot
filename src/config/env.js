@@ -23,9 +23,18 @@ const config = {
 
   // Google API 設定
   google: {
+    // 認證方式: 'service_account' 或 'oauth' (預設)
+    authType: process.env.GOOGLE_AUTH_TYPE || 'oauth',
+
+    // Service Account 設定 (推薦)
+    serviceAccountPath: process.env.GOOGLE_SERVICE_ACCOUNT_PATH,
+
+    // OAuth 2.0 設定 (需要定期更新 token)
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+
+    // 共用設定
     calendarId: process.env.GOOGLE_CALENDAR_ID,
   },
 
@@ -49,19 +58,36 @@ function validateEnv() {
     throw new Error(`❌ 缺少必要的環境變數: ${missing.join(', ')}`);
   }
 
-  // 檢查 Google API 配置 (警告但不中斷)
-  const googleRequired = [
-    'GOOGLE_CLIENT_ID',
-    'GOOGLE_CLIENT_SECRET',
-    'GOOGLE_REFRESH_TOKEN',
-    'GOOGLE_CALENDAR_ID',
-  ];
+  // 檢查 Google API 配置 (根據認證方式檢查)
+  const authType = process.env.GOOGLE_AUTH_TYPE || 'oauth';
 
-  const googleMissing = googleRequired.filter(key => !process.env[key]);
+  if (authType === 'service_account') {
+    // Service Account 模式
+    const serviceAccountRequired = ['GOOGLE_SERVICE_ACCOUNT_PATH', 'GOOGLE_CALENDAR_ID'];
+    const serviceAccountMissing = serviceAccountRequired.filter(key => !process.env[key]);
 
-  if (googleMissing.length > 0) {
-    console.log(`⚠️ 警告: Google API 環境變數未設定: ${googleMissing.join(', ')}`);
-    console.log('   部分功能可能無法使用');
+    if (serviceAccountMissing.length > 0) {
+      console.log(`⚠️ 警告: Service Account 模式缺少必要變數: ${serviceAccountMissing.join(', ')}`);
+      console.log('   部分功能可能無法使用');
+    } else {
+      console.log('✅ Service Account 配置驗證成功');
+    }
+  } else {
+    // OAuth 模式
+    const oauthRequired = [
+      'GOOGLE_CLIENT_ID',
+      'GOOGLE_CLIENT_SECRET',
+      'GOOGLE_REFRESH_TOKEN',
+      'GOOGLE_CALENDAR_ID',
+    ];
+    const oauthMissing = oauthRequired.filter(key => !process.env[key]);
+
+    if (oauthMissing.length > 0) {
+      console.log(`⚠️ 警告: OAuth 模式缺少必要變數: ${oauthMissing.join(', ')}`);
+      console.log('   部分功能可能無法使用');
+    } else {
+      console.log('✅ OAuth 2.0 配置驗證成功');
+    }
   }
 
   console.log('✅ 環境變數驗證成功');

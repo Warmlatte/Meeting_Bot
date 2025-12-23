@@ -2,6 +2,11 @@
 .env
 .env.backup
 
+# Google Service Account 金鑰
+service-account.json
+*-service-account.json
+*.json.key
+
 # 系統檔案
 .DS_Store
 
@@ -21,3 +26,6 @@ CLAUDE.md
 # 資料檔案
 data/
 !data/.gitkeep
+
+# 設定文件
+/docs

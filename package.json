@@ -8,7 +8,10 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "get-token": "node scripts/get-google-token.js",
+    "test-calendar": "node scripts/test-calendar.js",
+    "verify-sa": "node scripts/verify-service-account.js"
   },
   "keywords": [
     "discord",
@@ -25,7 +28,8 @@
     "dotenv": "^16.6.1",
     "google-auth-library": "^10.5.0",
     "googleapis": "^166.0.0",
-    "node-cron": "^4.2.1"
+    "node-cron": "^4.2.1",
+    "open": "^10.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

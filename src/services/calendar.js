@@ -7,20 +7,62 @@ import config from '../config/env.js';
  */
 class CalendarService {
   constructor() {
-    // 初始化 OAuth2 客戶端
-    this.auth = new google.auth.OAuth2(
-      config.google.clientId,
-      config.google.clientSecret
-    );
-
-    // 設定認證憑證
-    this.auth.setCredentials({
-      refresh_token: config.google.refreshToken
-    });
+    // 根據配置選擇認證方式
+    this.auth = this.initializeAuth();
 
     // 初始化 Calendar API
     this.calendar = google.calendar({ version: 'v3', auth: this.auth });
     this.calendarId = config.google.calendarId;
+  }
+
+  /**
+   * 初始化認證方式
+   * 支援 Service Account 和 OAuth 2.0 兩種方式
+   * @returns {GoogleAuth} 認證客戶端
+   */
+  initializeAuth() {
+    const authType = config.google.authType || 'oauth';
+
+    if (authType === 'service_account') {
+      // Service Account 認證 (推薦)
+      console.log('🔐 使用 Service Account 認證');
+
+      if (!config.google.serviceAccountPath) {
+        throw new Error('❌ Service Account 模式需要設定 GOOGLE_SERVICE_ACCOUNT_PATH');
+      }
+
+      try {
+        const auth = new google.auth.GoogleAuth({
+          keyFile: config.google.serviceAccountPath,
+          scopes: ['https://www.googleapis.com/auth/calendar'],
+        });
+
+        console.log('✅ Service Account 認證初始化成功');
+        return auth;
+      } catch (error) {
+        console.error('❌ Service Account 認證失敗:', error.message);
+        throw new Error(`Service Account 認證失敗: ${error.message}`);
+      }
+    } else {
+      // OAuth 2.0 認證 (需要定期更新 token)
+      console.log('🔐 使用 OAuth 2.0 認證');
+
+      if (!config.google.clientId || !config.google.clientSecret || !config.google.refreshToken) {
+        throw new Error('❌ OAuth 模式需要設定 GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN');
+      }
+
+      const auth = new google.auth.OAuth2(
+        config.google.clientId,
+        config.google.clientSecret
+      );
+
+      auth.setCredentials({
+        refresh_token: config.google.refreshToken
+      });
+
+      console.log('✅ OAuth 2.0 認證初始化成功');
+      return auth;
+    }
   }
 
   /**
@@ -218,6 +260,31 @@ class CalendarService {
     } catch (error) {
       console.error('❌ 解析 Discord 資訊失敗:', error);
       return {};
+    }
+  }
+
+  /**
+   * 查詢使用者參加的會議
+   * @param {string} userId - Discord 用戶 ID
+   * @param {string} timeMin - 開始時間 (ISO 格式)
+   * @param {string} timeMax - 結束時間 (ISO 格式)
+   * @returns {Promise<Array>} - 會議列表
+   */
+  async getUserMeetings(userId, timeMin, timeMax) {
+    try {
+      const allEvents = await this.listMeetings(timeMin, timeMax);
+      const allMeetings = allEvents.map(event => this.parseMeetingEvent(event));
+
+      // 篩選出使用者參加的會議
+      const userMeetings = allMeetings.filter(meeting => {
+        return meeting.participants && meeting.participants.some(p => p.user_id === userId);
+      });
+
+      console.log(`📋 找到 ${userMeetings.length} 個用戶 ${userId} 的會議`);
+      return userMeetings;
+    } catch (error) {
+      console.error('❌ 查詢使用者會議失敗:', error);
+      throw new Error(`查詢使用者會議失敗: ${error.message}`);
     }
   }
 
