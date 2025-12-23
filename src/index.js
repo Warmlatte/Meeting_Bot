@@ -25,12 +25,18 @@ client.commands = new Collection();
 // 載入指令
 import addMeeting from "./commands/add-meeting.js";
 import listMeetings from "./commands/list-meetings.js";
+import editMeeting from "./commands/edit-meeting.js";
+import cancelMeeting from "./commands/cancel-meeting.js";
+import userMeetings from "./commands/user-meetings.js";
 import testReminder from "./commands/test-reminder.js";
 import updateBoard from "./commands/update-board.js";
 
 // 註冊指令到 client 和註冊陣列
 client.commands.set(addMeeting.data.name, addMeeting);
 client.commands.set(listMeetings.data.name, listMeetings);
+client.commands.set(editMeeting.data.name, editMeeting);
+client.commands.set(cancelMeeting.data.name, cancelMeeting);
+client.commands.set(userMeetings.data.name, userMeetings);
 client.commands.set(testReminder.data.name, testReminder);
 client.commands.set(updateBoard.data.name, updateBoard);
 
@@ -38,6 +44,9 @@ client.commands.set(updateBoard.data.name, updateBoard);
 const commands = [];
 commands.push(addMeeting.data.toJSON());
 commands.push(listMeetings.data.toJSON());
+commands.push(editMeeting.data.toJSON());
+commands.push(cancelMeeting.data.toJSON());
+commands.push(userMeetings.data.toJSON());
 commands.push(testReminder.data.toJSON());
 commands.push(updateBoard.data.toJSON());
 
