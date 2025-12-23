@@ -27,9 +27,9 @@ class EmbedBuilderUtil {
       .addFields(
         { name: '📅 日期', value: startTime.format('YYYY-MM-DD'), inline: true },
         { name: '🕐 時間', value: `${startTime.format('HH:mm')} - ${endTime.format('HH:mm')}`, inline: true },
-        { name: '📝 類型', value: meeting.type, inline: true },
-        { name: '📋 會議名稱', value: meeting.title, inline: false },
-        { name: '📍 地點', value: meeting.location, inline: false },
+        { name: '📝 類型', value: meeting.type || '未設定', inline: true },
+        { name: '📋 會議名稱', value: meeting.title || '未設定', inline: false },
+        { name: '📍 地點', value: meeting.location || '未設定', inline: false },
         { name: '👥 參加者', value: meeting.participants.map(p => `<@${p.user_id}>`).join(' '), inline: false },
         { name: '🆔 會議 ID', value: `\`${event.id}\``, inline: false }
       )
@@ -135,8 +135,8 @@ class EmbedBuilderUtil {
       const participantCount = meeting.participants.length;
 
       description += `\n**🕐 ${startTime.format('MM/DD HH:mm')} - ${endTime.format('HH:mm')}**\n`;
-      description += `📋 ${meeting.type} | ${meeting.title}\n`;
-      description += `📍 ${meeting.location}\n`;
+      description += `📋 ${meeting.type || '未設定'} | ${meeting.title || '未設定'}\n`;
+      description += `📍 ${meeting.location || '未設定'}\n`;
       description += `👥 參加者: ${participantCount} 位`;
 
       if (participantCount > 0 && participantCount <= 3) {
@@ -201,10 +201,10 @@ class EmbedBuilderUtil {
       .setColor(CONSTANTS.COLORS.WARNING)
       .setTitle(reminderTexts[reminderType] || '🔔 會議提醒')
       .addFields(
-        { name: '📋 會議名稱', value: meeting.title, inline: false },
+        { name: '📋 會議名稱', value: meeting.title || '未設定', inline: false },
         { name: '📅 日期', value: startTime.format('YYYY-MM-DD (dddd)'), inline: true },
         { name: '🕐 時間', value: `${startTime.format('HH:mm')} - ${endTime.format('HH:mm')}`, inline: true },
-        { name: '📍 地點', value: meeting.location, inline: true }
+        { name: '📍 地點', value: meeting.location || '未設定', inline: true }
       )
       .setTimestamp();
 
@@ -251,7 +251,7 @@ class EmbedBuilderUtil {
       '1d': `明天 ${startTime.format('HH:mm')}`,
     };
 
-    return `🔔 **會議提醒**\n\n${participantMentions}\n\n${timeTexts[reminderType]} 有【${meeting.title}】會議\n📍 地點: ${meeting.location}`;
+    return `🔔 **會議提醒**\n\n${participantMentions}\n\n${timeTexts[reminderType]} 有【${meeting.title || '未設定'}】會議\n📍 地點: ${meeting.location || '未設定'}`;
   }
 
   /**
@@ -287,8 +287,8 @@ class EmbedBuilderUtil {
       const isPast = dayjs().isAfter(endTime);
       const statusEmoji = isPast ? '✅' : '🕐';
 
-      description += `\n${statusEmoji} **${startTime.format('HH:mm')}** | ${meeting.type} | **${meeting.title}**\n`;
-      description += `   📍 ${meeting.location}\n`;
+      description += `\n${statusEmoji} **${startTime.format('HH:mm')}** | ${meeting.type || '未設定'} | **${meeting.title || '未設定'}**\n`;
+      description += `   📍 ${meeting.location || '未設定'}\n`;
 
       if (meeting.participants.length > 0) {
         const participantMentions = meeting.participants
@@ -368,8 +368,8 @@ class EmbedBuilderUtil {
       for (const meeting of sortedMeetings) {
         const startTime = dayjs(meeting.startTime);
 
-        description += `🕐 ${startTime.format('HH:mm')} | ${meeting.type} | ${meeting.title}\n`;
-        description += `   📍 ${meeting.location}\n`;
+        description += `🕐 ${startTime.format('HH:mm')} | ${meeting.type || '未設定'} | ${meeting.title || '未設定'}\n`;
+        description += `   📍 ${meeting.location || '未設定'}\n`;
 
         if (meeting.participants.length > 0 && meeting.participants.length <= 5) {
           const participantMentions = meeting.participants
