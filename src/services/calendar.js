@@ -141,11 +141,12 @@ class CalendarService {
   }
 
   /**
-   * 取得單一會議
+   * 取得單一會議 (內部方法,回傳原始事件物件)
+   * @private
    * @param {string} eventId - 事件 ID
-   * @returns {Promise<Object>} - 會議資料
+   * @returns {Promise<Object>} - Google Calendar 原始事件物件
    */
-  async getMeeting(eventId) {
+  async _getRawEvent(eventId) {
     try {
       const response = await this.calendar.events.get({
         calendarId: this.calendarId,
@@ -160,6 +161,23 @@ class CalendarService {
   }
 
   /**
+   * 取得單一會議
+   * @param {string} eventId - 事件 ID
+   * @returns {Promise<Object>} - 會議資料
+   */
+  async getMeeting(eventId) {
+    try {
+      const rawEvent = await this._getRawEvent(eventId);
+
+      // 解析事件資料為應用程式格式
+      return this.parseMeetingEvent(rawEvent);
+    } catch (error) {
+      console.error('❌ 取得會議失敗:', error);
+      throw new Error(`取得會議失敗: ${error.message}`);
+    }
+  }
+
+  /**
    * 更新會議
    * @param {string} eventId - 事件 ID
    * @param {Object} meetingData - 更新的會議資料
@@ -167,7 +185,7 @@ class CalendarService {
    */
   async updateMeeting(eventId, meetingData) {
     try {
-      const event = await this.getMeeting(eventId);
+      const event = await this._getRawEvent(eventId);
 
       // 更新欄位
       if (meetingData.title || meetingData.type) {
