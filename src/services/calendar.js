@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import dayjs from 'dayjs';
+import { parseDate } from '../utils/date-utils.js';
 import config from '../config/env.js';
 
 /**
@@ -93,7 +93,8 @@ class CalendarService {
    */
   async createMeeting(meetingData) {
     try {
-      const startTime = dayjs(`${meetingData.date} ${meetingData.time}`);
+      // 使用 parseDate 確保時區正確 (Asia/Taipei)
+      const startTime = parseDate(`${meetingData.date} ${meetingData.time}`, 'YYYY-MM-DD HH:mm');
       const endTime = startTime.add(meetingData.duration || 2, 'hour');
 
       const event = {
@@ -219,7 +220,8 @@ class CalendarService {
         event.description = this.formatDescription(meetingData);
       }
       if (meetingData.date || meetingData.time) {
-        const startTime = dayjs(`${meetingData.date} ${meetingData.time}`);
+        // 使用 parseDate 確保時區正確 (Asia/Taipei)
+        const startTime = parseDate(`${meetingData.date} ${meetingData.time}`, 'YYYY-MM-DD HH:mm');
         const endTime = startTime.add(meetingData.duration || 2, 'hour');
         event.start = {
           dateTime: startTime.toISOString(),

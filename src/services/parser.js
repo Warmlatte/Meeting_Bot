@@ -1,7 +1,4 @@
-import dayjs from 'dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat.js';
-
-dayjs.extend(customParseFormat);
+import { parseDate as parseDateWithTimezone } from '../utils/date-utils.js';
 
 /**
  * 日期時間解析器
@@ -62,13 +59,14 @@ class Parser {
   }
 
   /**
-   * 組合日期時間
+   * 組合日期時間 (使用 Asia/Taipei 時區)
    * @param {string} date - 日期 (YYYY-MM-DD)
    * @param {string} time - 時間 (HH:MM)
-   * @returns {Object} - dayjs 物件
+   * @returns {Object} - dayjs 物件 (已設定時區)
    */
   static combineDateTime(date, time) {
-    return dayjs(`${date} ${time}`, 'YYYY-MM-DD HH:mm');
+    // 使用 date-utils 的 parseDate 確保正確的時區
+    return parseDateWithTimezone(`${date} ${time}`, 'YYYY-MM-DD HH:mm');
   }
 }
 
