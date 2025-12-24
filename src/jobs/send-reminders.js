@@ -1,7 +1,7 @@
 import CalendarService from '../services/calendar.js';
 import EmbedBuilderUtil from '../utils/embed-builder.js';
 import reminderTracker from '../utils/reminder-tracker.js';
-import dayjs from 'dayjs';
+import { now, createDate } from '../utils/date-utils.js';
 
 /**
  * 發送會議提醒任務
@@ -20,9 +20,9 @@ class SendRemindersJob {
 
     try {
       // 查詢未來 3 小時內的會議
-      const now = dayjs();
-      const timeMin = now.toISOString();
-      const timeMax = now.add(3, 'hour').toISOString();
+      const currentTime = now();
+      const timeMin = currentTime.toISOString();
+      const timeMax = currentTime.add(3, 'hour').toISOString();
 
       const events = await this.calendarService.listMeetings(timeMin, timeMax);
 
@@ -49,9 +49,9 @@ class SendRemindersJob {
    * @param {Object} meeting - 會議資料
    */
   async checkAndSendReminder(meeting) {
-    const now = dayjs();
-    const startTime = dayjs(meeting.startTime);
-    const minutesUntilStart = startTime.diff(now, 'minute');
+    const currentTime = now();
+    const startTime = createDate(meeting.startTime);
+    const minutesUntilStart = startTime.diff(currentTime, 'minute');
 
     // 2 小時前提醒 (100-140 分鐘之間,考慮任務執行間隔)
     // 約 1 小時 40 分鐘 ~ 2 小時 20 分鐘

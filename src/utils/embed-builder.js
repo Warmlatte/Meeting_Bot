@@ -1,11 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
 import CONSTANTS from '../config/constants.js';
 import { getRandomMeetingSuccessImage } from '../config/images.js';
-import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek.js';
-
-// 載入 dayjs 插件
-dayjs.extend(isoWeek);
+import { createDate, now } from '../utils/date-utils.js';
 
 /**
  * Embed 訊息建構器
@@ -18,8 +14,8 @@ class EmbedBuilderUtil {
    * @returns {EmbedBuilder}
    */
   static createMeetingConfirmEmbed(meeting, event) {
-    const startTime = dayjs(event.start.dateTime);
-    const endTime = dayjs(event.end.dateTime);
+    const startTime = createDate(event.start.dateTime);
+    const endTime = createDate(event.end.dateTime);
 
     const embed = new EmbedBuilder()
       .setColor(CONSTANTS.COLORS.SUCCESS)
@@ -75,8 +71,8 @@ class EmbedBuilderUtil {
 
     for (const conflict of conflictData.conflicts) {
       const conflictMeeting = conflict.meeting;
-      const startTime = dayjs(conflictMeeting.start.dateTime);
-      const endTime = dayjs(conflictMeeting.end.dateTime);
+      const startTime = createDate(conflictMeeting.start.dateTime);
+      const endTime = createDate(conflictMeeting.end.dateTime);
 
       const participantNames = conflict.participants.map(p => p.name || `<@${p.user_id}>`).join(', ');
       const timeRange = `${startTime.format('HH:mm')}-${endTime.format('HH:mm')}`;
@@ -130,8 +126,8 @@ class EmbedBuilderUtil {
     let description = '';
 
     for (const meeting of pageMeetings) {
-      const startTime = dayjs(meeting.startTime);
-      const endTime = dayjs(meeting.endTime);
+      const startTime = createDate(meeting.startTime);
+      const endTime = createDate(meeting.endTime);
       const participantCount = meeting.participants.length;
 
       description += `\n**🕐 ${startTime.format('MM/DD HH:mm')} - ${endTime.format('HH:mm')}**\n`;
@@ -189,8 +185,8 @@ class EmbedBuilderUtil {
    * @returns {EmbedBuilder}
    */
   static createReminderEmbed(meeting, reminderType) {
-    const startTime = dayjs(meeting.startTime);
-    const endTime = dayjs(meeting.endTime);
+    const startTime = createDate(meeting.startTime);
+    const endTime = createDate(meeting.endTime);
 
     const reminderTexts = {
       '2h': '⏰ 2 小時後有會議',
@@ -241,7 +237,7 @@ class EmbedBuilderUtil {
    * @returns {string}
    */
   static createChannelReminderText(meeting, reminderType) {
-    const startTime = dayjs(meeting.startTime);
+    const startTime = createDate(meeting.startTime);
     const participantMentions = meeting.participants
       .map(p => `<@${p.user_id}>`)
       .join(' ');
@@ -260,7 +256,7 @@ class EmbedBuilderUtil {
    * @returns {EmbedBuilder}
    */
   static createTodayBoardEmbed(meetings) {
-    const today = dayjs();
+    const today = now();
     const embed = new EmbedBuilder()
       .setColor(CONSTANTS.COLORS.PRIMARY)
       .setTitle(`📅 今日會議 (${today.format('YYYY-MM-DD')})`)
@@ -276,15 +272,15 @@ class EmbedBuilderUtil {
 
     // 按時間排序
     const sortedMeetings = meetings.sort((a, b) => {
-      return dayjs(a.startTime).isBefore(dayjs(b.startTime)) ? -1 : 1;
+      return createDate(a.startTime).isBefore(createDate(b.startTime)) ? -1 : 1;
     });
 
     for (const meeting of sortedMeetings) {
-      const startTime = dayjs(meeting.startTime);
-      const endTime = dayjs(meeting.endTime);
+      const startTime = createDate(meeting.startTime);
+      const endTime = createDate(meeting.endTime);
 
       // 判斷會議是否已結束
-      const isPast = dayjs().isAfter(endTime);
+      const isPast = now().isAfter(endTime);
       const statusEmoji = isPast ? '✅' : '🕐';
 
       description += `\n${statusEmoji} **${startTime.format('HH:mm')}** | ${meeting.type || '未設定'} | **${meeting.title || '未設定'}**\n`;
@@ -314,8 +310,8 @@ class EmbedBuilderUtil {
    * @returns {EmbedBuilder}
    */
   static createWeekBoardEmbed(meetings) {
-    const weekStart = dayjs().startOf('isoWeek');
-    const weekEnd = dayjs().endOf('isoWeek');
+    const weekStart = now().startOf('isoWeek');
+    const weekEnd = now().endOf('isoWeek');
 
     const embed = new EmbedBuilder()
       .setColor(CONSTANTS.COLORS.PRIMARY)
@@ -332,7 +328,7 @@ class EmbedBuilderUtil {
     const meetingsByDay = {};
 
     for (const meeting of meetings) {
-      const startTime = dayjs(meeting.startTime);
+      const startTime = createDate(meeting.startTime);
       const dayKey = startTime.format('YYYY-MM-DD');
 
       if (!meetingsByDay[dayKey]) {
@@ -348,12 +344,12 @@ class EmbedBuilderUtil {
     const sortedDays = Object.keys(meetingsByDay).sort();
 
     for (const dayKey of sortedDays) {
-      const date = dayjs(dayKey);
+      const date = createDate(dayKey);
       const dayMeetings = meetingsByDay[dayKey];
 
       // 日期標題
       const dayOfWeek = ['日', '一', '二', '三', '四', '五', '六'][date.day()];
-      const isToday = date.isSame(dayjs(), 'day');
+      const isToday = date.isSame(now(), 'day');
       const dayTitle = isToday
         ? `【${date.format('MM/DD')} 週${dayOfWeek}】 ⭐ 今天`
         : `【${date.format('MM/DD')} 週${dayOfWeek}】`;
@@ -362,11 +358,11 @@ class EmbedBuilderUtil {
 
       // 排序會議
       const sortedMeetings = dayMeetings.sort((a, b) => {
-        return dayjs(a.startTime).isBefore(dayjs(b.startTime)) ? -1 : 1;
+        return createDate(a.startTime).isBefore(createDate(b.startTime)) ? -1 : 1;
       });
 
       for (const meeting of sortedMeetings) {
-        const startTime = dayjs(meeting.startTime);
+        const startTime = createDate(meeting.startTime);
 
         description += `🕐 ${startTime.format('HH:mm')} | ${meeting.type || '未設定'} | ${meeting.title || '未設定'}\n`;
         description += `   📍 ${meeting.location || '未設定'}\n`;

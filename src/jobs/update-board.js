@@ -2,11 +2,7 @@ import CalendarService from '../services/calendar.js';
 import EmbedBuilderUtil from '../utils/embed-builder.js';
 import boardManager from '../utils/board-manager.js';
 import config from '../config/env.js';
-import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek.js';
-
-// 載入 dayjs 插件
-dayjs.extend(isoWeek);
+import { getTodayStart, getTodayEnd, getThisWeekStart, getThisWeekEnd } from '../utils/date-utils.js';
 
 /**
  * 更新布告欄任務
@@ -50,8 +46,8 @@ class UpdateBoardJob {
     console.log('[UpdateBoardJob] 更新今日會議...');
 
     // 查詢今日會議
-    const timeMin = dayjs().startOf('day').toISOString();
-    const timeMax = dayjs().endOf('day').toISOString();
+    const timeMin = getTodayStart();
+    const timeMax = getTodayEnd();
 
     const events = await this.calendarService.listMeetings(timeMin, timeMax);
     const meetings = events.map(event => this.calendarService.parseMeetingEvent(event));
@@ -89,8 +85,8 @@ class UpdateBoardJob {
     console.log('[UpdateBoardJob] 更新本週會議...');
 
     // 查詢本週會議
-    const timeMin = dayjs().startOf('isoWeek').toISOString();
-    const timeMax = dayjs().endOf('isoWeek').toISOString();
+    const timeMin = getThisWeekStart();
+    const timeMax = getThisWeekEnd();
 
     const events = await this.calendarService.listMeetings(timeMin, timeMax);
     const meetings = events.map(event => this.calendarService.parseMeetingEvent(event));

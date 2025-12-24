@@ -8,10 +8,7 @@ import {
 } from 'discord.js';
 import CalendarService from '../services/calendar.js';
 import EmbedBuilderUtil from '../utils/embed-builder.js';
-import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek.js';
-
-dayjs.extend(isoWeek);
+import { now, getTodayStart, getTodayEnd, getThisWeekStart, getThisWeekEnd, getThisMonthStart, getThisMonthEnd } from '../utils/date-utils.js';
 
 // 儲存分頁資料 (使用 Map,key 為 messageId)
 export const paginationData = new Map();
@@ -221,23 +218,23 @@ function getTimeRange(filterType) {
 
   switch (filterType) {
     case 'today':
-      timeMin = dayjs().startOf('day').toISOString();
-      timeMax = dayjs().endOf('day').toISOString();
+      timeMin = getTodayStart();
+      timeMax = getTodayEnd();
       break;
 
     case 'this_week':
-      timeMin = dayjs().startOf('isoWeek').toISOString();
-      timeMax = dayjs().endOf('isoWeek').toISOString();
+      timeMin = getThisWeekStart();
+      timeMax = getThisWeekEnd();
       break;
 
     case 'this_month':
-      timeMin = dayjs().startOf('month').toISOString();
-      timeMax = dayjs().endOf('month').toISOString();
+      timeMin = getThisMonthStart();
+      timeMax = getThisMonthEnd();
       break;
 
     default:
-      timeMin = dayjs().startOf('day').toISOString();
-      timeMax = dayjs().endOf('day').toISOString();
+      timeMin = getTodayStart();
+      timeMax = getTodayEnd();
   }
 
   return { timeMin, timeMax };

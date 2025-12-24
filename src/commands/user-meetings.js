@@ -2,7 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import CalendarService from '../services/calendar.js';
 import EmbedBuilderUtil from '../utils/embed-builder.js';
 import CONSTANTS from '../config/constants.js';
-import dayjs from 'dayjs';
+import { now, createDate } from '../utils/date-utils.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -24,8 +24,8 @@ export default {
 
     try {
       // 查詢未來 30 天的會議
-      const timeMin = dayjs().startOf('day').toISOString();
-      const timeMax = dayjs().add(30, 'day').endOf('day').toISOString();
+      const timeMin = now().startOf('day').toISOString();
+      const timeMax = now().add(30, 'day').endOf('day').toISOString();
 
       const meetings = await calendarService.getUserMeetings(targetUser.id, timeMin, timeMax);
 
@@ -43,7 +43,7 @@ export default {
 
       // 按時間排序
       const sortedMeetings = meetings.sort((a, b) => {
-        return dayjs(a.startTime).isBefore(dayjs(b.startTime)) ? -1 : 1;
+        return createDate(a.startTime).isBefore(createDate(b.startTime)) ? -1 : 1;
       });
 
       // 只顯示前 10 個會議
@@ -52,9 +52,9 @@ export default {
       let description = '';
 
       for (const meeting of displayMeetings) {
-        const startTime = dayjs(meeting.startTime);
-        const endTime = dayjs(meeting.endTime);
-        const isPast = dayjs().isAfter(endTime);
+        const startTime = createDate(meeting.startTime);
+        const endTime = createDate(meeting.endTime);
+        const isPast = now().isAfter(endTime);
         const statusEmoji = isPast ? '✅' : '📌';
 
         description += `\n${statusEmoji} **${startTime.format('MM/DD HH:mm')}** | ${meeting.type}\n`;

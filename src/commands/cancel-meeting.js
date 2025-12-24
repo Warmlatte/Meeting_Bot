@@ -9,7 +9,7 @@ import CalendarService from "../services/calendar.js";
 import EmbedBuilderUtil from "../utils/embed-builder.js";
 import CONSTANTS from "../config/constants.js";
 import { getRandomMeetingCancelSuccessImage } from "../config/images.js";
-import dayjs from "dayjs";
+import { createDate } from "../utils/date-utils.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -65,8 +65,8 @@ export default {
       }
 
       // 顯示確認對話框
-      const startTime = dayjs(meeting.startTime);
-      const endTime = dayjs(meeting.endTime);
+      const startTime = createDate(meeting.startTime);
+      const endTime = createDate(meeting.endTime);
 
       const confirmEmbed = new EmbedBuilder()
         .setColor(CONSTANTS.COLORS.WARNING)
@@ -221,8 +221,8 @@ export async function handleCancelAbort(interaction) {
  * 通知參加者會議已取消
  */
 async function notifyParticipants(client, meeting) {
-  const startTime = dayjs(meeting.startTime);
-  const endTime = dayjs(meeting.endTime);
+  const startTime = createDate(meeting.startTime);
+  const endTime = createDate(meeting.endTime);
 
   const cancelEmbed = new EmbedBuilder()
     .setColor(CONSTANTS.COLORS.ERROR)

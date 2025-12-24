@@ -1,4 +1,4 @@
-import dayjs from 'dayjs';
+import { createDate, now } from '../utils/date-utils.js';
 
 /**
  * 資料驗證器
@@ -31,10 +31,10 @@ class Validator {
 
     // 日期驗證
     if (data.date) {
-      const meetingDate = dayjs(data.date);
+      const meetingDate = createDate(data.date);
       if (!meetingDate.isValid()) {
         errors.push('日期格式錯誤');
-      } else if (meetingDate.isBefore(dayjs(), 'day')) {
+      } else if (meetingDate.isBefore(now(), 'day')) {
         errors.push('會議日期不可為過去');
       }
     }

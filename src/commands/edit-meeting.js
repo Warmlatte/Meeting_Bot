@@ -16,7 +16,7 @@ import Validator from '../utils/validator.js';
 import EmbedBuilderUtil from '../utils/embed-builder.js';
 import CONSTANTS from '../config/constants.js';
 import { getRandomMeetingEditSuccessImage } from '../config/images.js';
-import dayjs from 'dayjs';
+import { createDate } from '../utils/date-utils.js';
 
 // 儲存編輯中的會議資料
 export const editingMeetings = new Map();
@@ -88,7 +88,7 @@ export default {
  * 顯示編輯表單
  */
 async function showEditForm(interaction, meeting) {
-  const startTime = dayjs(meeting.startTime);
+  const startTime = createDate(meeting.startTime);
   const meetingTypeValue = meeting.type === '線上會議' ? 'online' : 'offline';
 
   const typeSelect = new StringSelectMenuBuilder()
@@ -269,7 +269,7 @@ export async function showDetailsModal(interaction) {
   }
 
   const meeting = editData.original;
-  const startTime = dayjs(meeting.startTime);
+  const startTime = createDate(meeting.startTime);
 
   const modal = new ModalBuilder()
     .setCustomId('edit_meeting_details_modal')
@@ -346,8 +346,8 @@ export async function handleModalSubmit(interaction) {
     const content = interaction.fields.getTextInputValue('meeting_content');
 
     // 組合時間
-    const hour = editData.hour || dayjs(editData.original.startTime).hour().toString();
-    const minute = editData.minute || dayjs(editData.original.startTime).minute().toString();
+    const hour = editData.hour || createDate(editData.original.startTime).hour().toString();
+    const minute = editData.minute || createDate(editData.original.startTime).minute().toString();
     const time = `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
 
     const meetingData = {
