@@ -27,7 +27,9 @@ const config = {
     authType: process.env.GOOGLE_AUTH_TYPE || 'oauth',
 
     // Service Account 設定 (推薦)
+    // 支援兩種方式：檔案路徑 (本地) 或 Base64 JSON (雲端)
     serviceAccountPath: process.env.GOOGLE_SERVICE_ACCOUNT_PATH,
+    serviceAccountJson: process.env.GOOGLE_SERVICE_ACCOUNT_JSON, // Base64 編碼的 JSON
 
     // OAuth 2.0 設定 (需要定期更新 token)
     clientId: process.env.GOOGLE_CLIENT_ID,

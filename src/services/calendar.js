@@ -27,15 +27,36 @@ class CalendarService {
       // Service Account 認證 (推薦)
       console.log('🔐 使用 Service Account 認證');
 
-      if (!config.google.serviceAccountPath) {
-        throw new Error('❌ Service Account 模式需要設定 GOOGLE_SERVICE_ACCOUNT_PATH');
-      }
-
       try {
-        const auth = new google.auth.GoogleAuth({
-          keyFile: config.google.serviceAccountPath,
-          scopes: ['https://www.googleapis.com/auth/calendar'],
-        });
+        let authConfig;
+
+        // 優先使用環境變數 (雲端部署)
+        if (config.google.serviceAccountJson) {
+          console.log('📦 從環境變數載入 Service Account (Base64)');
+
+          // 解碼 Base64
+          const jsonString = Buffer.from(config.google.serviceAccountJson, 'base64').toString('utf-8');
+          const credentials = JSON.parse(jsonString);
+
+          authConfig = {
+            credentials: credentials,
+            scopes: ['https://www.googleapis.com/auth/calendar'],
+          };
+        }
+        // 本地開發使用檔案路徑
+        else if (config.google.serviceAccountPath) {
+          console.log('📁 從檔案載入 Service Account');
+
+          authConfig = {
+            keyFile: config.google.serviceAccountPath,
+            scopes: ['https://www.googleapis.com/auth/calendar'],
+          };
+        }
+        else {
+          throw new Error('❌ Service Account 模式需要設定 GOOGLE_SERVICE_ACCOUNT_JSON 或 GOOGLE_SERVICE_ACCOUNT_PATH');
+        }
+
+        const auth = new google.auth.GoogleAuth(authConfig);
 
         console.log('✅ Service Account 認證初始化成功');
         return auth;
