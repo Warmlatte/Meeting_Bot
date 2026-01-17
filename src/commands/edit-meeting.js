@@ -89,6 +89,8 @@ export default {
  */
 async function showEditForm(interaction, meeting) {
   const startTime = createDate(meeting.startTime);
+  const endTime = createDate(meeting.endTime);
+  const durationHours = endTime.diff(startTime, 'hour', true);
   const meetingTypeValue = meeting.type === '線上會議' ? 'online' : 'offline';
 
   const typeSelect = new StringSelectMenuBuilder()
@@ -146,6 +148,7 @@ async function showEditForm(interaction, meeting) {
       { name: '📋 目前會議', value: meeting.title || '未設定', inline: false },
       { name: '📅 目前日期', value: startTime.format('YYYY-MM-DD (dddd)'), inline: true },
       { name: '🕐 目前時間', value: startTime.format('HH:mm'), inline: true },
+      { name: '⏱️ 目前時長', value: `${durationHours} 小時`, inline: true },
       { name: '📍 目前地點', value: meeting.location || '未設定', inline: true },
       { name: '👥 目前參加者', value: `${meeting.participants?.length || 0} 人`, inline: true }
     )
@@ -270,6 +273,8 @@ export async function showDetailsModal(interaction) {
 
   const meeting = editData.original;
   const startTime = createDate(meeting.startTime);
+  const endTime = createDate(meeting.endTime);
+  const durationHours = endTime.diff(startTime, 'hour', true);
 
   const modal = new ModalBuilder()
     .setCustomId('edit_meeting_details_modal')
@@ -310,10 +315,20 @@ export async function showDetailsModal(interaction) {
     .setMaxLength(1000)
     .setRequired(false);
 
+  const durationInput = new TextInputBuilder()
+    .setCustomId('meeting_duration')
+    .setLabel('會議時長 (小時)')
+    .setPlaceholder('例如: 2 或 1.5')
+    .setStyle(TextInputStyle.Short)
+    .setValue(durationHours.toString())
+    .setMaxLength(4)
+    .setRequired(true);
+
   modal.addComponents(
     new ActionRowBuilder().addComponents(dateInput),
     new ActionRowBuilder().addComponents(titleInput),
     new ActionRowBuilder().addComponents(locationInput),
+    new ActionRowBuilder().addComponents(durationInput),
     new ActionRowBuilder().addComponents(contentInput)
   );
 
@@ -344,6 +359,8 @@ export async function handleModalSubmit(interaction) {
     const title = interaction.fields.getTextInputValue('meeting_title');
     const location = interaction.fields.getTextInputValue('meeting_location');
     const content = interaction.fields.getTextInputValue('meeting_content');
+    const durationInput = interaction.fields.getTextInputValue('meeting_duration');
+    const duration = parseFloat(durationInput) || 2;
 
     // 組合時間
     const hour = editData.hour || createDate(editData.original.startTime).hour().toString();
@@ -356,6 +373,7 @@ export async function handleModalSubmit(interaction) {
       location,
       content,
       time,
+      duration,
       type: editData.type || editData.original.type,
       participants: editData.participants || editData.original.participants,
       guild_id: editData.guild_id,
