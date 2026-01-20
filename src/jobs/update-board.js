@@ -2,7 +2,7 @@ import CalendarService from '../services/calendar.js';
 import EmbedBuilderUtil from '../utils/embed-builder.js';
 import boardManager from '../utils/board-manager.js';
 import config from '../config/env.js';
-import { getTodayStart, getTodayEnd, getThisWeekStart, getThisWeekEnd } from '../utils/date-utils.js';
+import { getTodayStart, getTodayEnd, getThisWeekStart, getThisWeekEnd, getNextWeekStart, getNextWeekEnd } from '../utils/date-utils.js';
 
 /**
  * 更新布告欄任務
@@ -32,6 +32,9 @@ class UpdateBoardJob {
 
       // 更新本週會議
       await this.updateWeekBoard(channel);
+
+      // 更新下週會議
+      await this.updateNextWeekBoard(channel);
 
       console.log('[UpdateBoardJob] ✅ 布告欄更新完成');
     } catch (error) {
@@ -114,6 +117,45 @@ class UpdateBoardJob {
       const message = await channel.send({ embeds: [embed] });
       boardManager.setWeekMessageId(message.id);
       console.log('[UpdateBoardJob] ✅ 已重新建立本週會議訊息');
+    }
+  }
+
+  /**
+   * 更新下週會議布告欄
+   */
+  async updateNextWeekBoard(channel) {
+    console.log('[UpdateBoardJob] 更新下週會議...');
+
+    // 查詢下週會議
+    const timeMin = getNextWeekStart();
+    const timeMax = getNextWeekEnd();
+
+    const events = await this.calendarService.listMeetings(timeMin, timeMax);
+    const meetings = events.map(event => this.calendarService.parseMeetingEvent(event));
+
+    const embed = EmbedBuilderUtil.createNextWeekBoardEmbed(meetings);
+
+    // 更新或建立訊息
+    const messageId = boardManager.getNextWeekMessageId();
+
+    try {
+      if (messageId) {
+        // 嘗試更新現有訊息
+        const message = await channel.messages.fetch(messageId);
+        await message.edit({ embeds: [embed] });
+        console.log('[UpdateBoardJob] ✅ 已更新下週會議訊息');
+      } else {
+        // 建立新訊息
+        const message = await channel.send({ embeds: [embed] });
+        boardManager.setNextWeekMessageId(message.id);
+        console.log('[UpdateBoardJob] ✅ 已建立下週會議訊息');
+      }
+    } catch (error) {
+      // 訊息可能被刪除,重新建立
+      console.log('[UpdateBoardJob] 舊訊息不存在,建立新訊息...');
+      const message = await channel.send({ embeds: [embed] });
+      boardManager.setNextWeekMessageId(message.id);
+      console.log('[UpdateBoardJob] ✅ 已重新建立下週會議訊息');
     }
   }
 

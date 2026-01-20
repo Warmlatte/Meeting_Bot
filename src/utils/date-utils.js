@@ -80,6 +80,22 @@ export function getThisWeekEnd() {
 }
 
 /**
+ * 取得下週開始時間（已設定時區）
+ * @returns {string} ISO 格式時間
+ */
+export function getNextWeekStart() {
+  return now().add(1, 'week').startOf('isoWeek').toISOString();
+}
+
+/**
+ * 取得下週結束時間（已設定時區）
+ * @returns {string} ISO 格式時間
+ */
+export function getNextWeekEnd() {
+  return now().add(1, 'week').endOf('isoWeek').toISOString();
+}
+
+/**
  * 取得本月開始時間（已設定時區）
  * @returns {string} ISO 格式時間
  */

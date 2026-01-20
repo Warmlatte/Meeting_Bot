@@ -39,6 +39,7 @@ class BoardManager {
     return {
       todayMessageId: null,
       weekMessageId: null,
+      nextWeekMessageId: null,
       lastUpdate: null,
     };
   }
@@ -92,12 +93,29 @@ class BoardManager {
   }
 
   /**
+   * 取得下週會議訊息 ID
+   */
+  getNextWeekMessageId() {
+    return this.data.nextWeekMessageId;
+  }
+
+  /**
+   * 設定下週會議訊息 ID
+   */
+  setNextWeekMessageId(messageId) {
+    this.data.nextWeekMessageId = messageId;
+    this.data.lastUpdate = new Date().toISOString();
+    this.save();
+  }
+
+  /**
    * 重置所有訊息 ID (用於重建布告欄)
    */
   reset() {
     this.data = {
       todayMessageId: null,
       weekMessageId: null,
+      nextWeekMessageId: null,
       lastUpdate: null,
     };
     this.save();

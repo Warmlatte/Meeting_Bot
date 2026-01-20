@@ -387,6 +387,87 @@ class EmbedBuilderUtil {
 
     return embed;
   }
+
+  /**
+   * 建立下週會議布告欄 Embed
+   * @param {Array} meetings - 下週會議列表
+   * @returns {EmbedBuilder}
+   */
+  static createNextWeekBoardEmbed(meetings) {
+    const nextWeekStart = now().add(1, 'week').startOf('isoWeek');
+    const nextWeekEnd = now().add(1, 'week').endOf('isoWeek');
+
+    const embed = new EmbedBuilder()
+      .setColor(CONSTANTS.COLORS.PRIMARY)
+      .setTitle(`📆 下週會議 (${nextWeekStart.format('MM/DD')} - ${nextWeekEnd.format('MM/DD')})`)
+      .setTimestamp();
+
+    if (meetings.length === 0) {
+      embed.setDescription('下週沒有會議 🎉');
+      embed.setFooter({ text: 'Meeting Bot • 每日 00:00 自動更新' });
+      return embed;
+    }
+
+    // 按日期分組
+    const meetingsByDay = {};
+
+    for (const meeting of meetings) {
+      const startTime = createDate(meeting.startTime);
+      const dayKey = startTime.format('YYYY-MM-DD');
+
+      if (!meetingsByDay[dayKey]) {
+        meetingsByDay[dayKey] = [];
+      }
+
+      meetingsByDay[dayKey].push(meeting);
+    }
+
+    let description = '';
+
+    // 按日期順序顯示
+    const sortedDays = Object.keys(meetingsByDay).sort();
+
+    for (const dayKey of sortedDays) {
+      const date = createDate(dayKey);
+      const dayMeetings = meetingsByDay[dayKey];
+
+      // 日期標題
+      const dayOfWeek = ['日', '一', '二', '三', '四', '五', '六'][date.day()];
+      const dayTitle = `【${date.format('MM/DD')} 週${dayOfWeek}】`;
+
+      description += `\n**${dayTitle}**\n`;
+
+      // 排序會議
+      const sortedMeetings = dayMeetings.sort((a, b) => {
+        return createDate(a.startTime).isBefore(createDate(b.startTime)) ? -1 : 1;
+      });
+
+      for (const meeting of sortedMeetings) {
+        const startTime = createDate(meeting.startTime);
+
+        description += `🕐 ${startTime.format('HH:mm')} | ${meeting.type || '未設定'} | ${meeting.title || '未設定'}\n`;
+        description += `   📍 ${meeting.location || '未設定'}\n`;
+
+        if (meeting.participants.length > 0 && meeting.participants.length <= 5) {
+          const participantMentions = meeting.participants
+            .map(p => `<@${p.user_id}>`)
+            .join(' ');
+          description += `   👥 ${participantMentions}\n`;
+        } else if (meeting.participants.length > 5) {
+          description += `   👥 ${meeting.participants.length} 位參加者\n`;
+        }
+
+        description += '\n';
+      }
+    }
+
+    embed.setDescription(description);
+    embed.setFooter({
+      text: `共 ${meetings.length} 場會議 • Meeting Bot • 每日 00:00 自動更新`
+    });
+
+    return embed;
+  }
 }
 
 export default EmbedBuilderUtil;
