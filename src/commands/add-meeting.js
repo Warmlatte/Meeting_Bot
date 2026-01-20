@@ -142,9 +142,9 @@ export async function showDetailsModal(interaction) {
 
   const dateTimeInput = new TextInputBuilder()
     .setCustomId("meeting_datetime")
-    .setLabel("會議日期與時間 (格式: YYYY-MM-DD HH:MM)")
+    .setLabel("會議日期與時間 (格式: YYYYMMDD HHMM)")
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder("例如: 20251215 14:00 或 2025-12-15 14:00")
+    .setPlaceholder("例如: 20251215 1400")
     .setRequired(true);
 
   const titleInput = new TextInputBuilder()
@@ -200,12 +200,12 @@ export async function handleModalSubmit(interaction) {
   // 取得 Modal 輸入
   const dateTimeStr = interaction.fields.getTextInputValue("meeting_datetime");
 
-  // 解析日期時間 (格式: "2025-12-15 14:00" 或 "25/12/15 14:00")
+  // 解析日期時間 (格式: "20251215 1400" 或 "2025-12-15 1400")
   const dateTimeParts = dateTimeStr.trim().split(/\s+/);
   if (dateTimeParts.length < 2) {
     const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
       "資料驗證失敗",
-      ["日期時間格式錯誤，請使用格式: 20251215 14:00 或 2025-12-15 14:00"]
+      ["日期時間格式錯誤，請使用格式: YYYYMMDD HHMM (例如: 20251215 1400)"]
     );
     await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
     return;
@@ -243,7 +243,7 @@ export async function handleModalSubmit(interaction) {
   if (!startTime.isValid()) {
     const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
       "日期時間格式錯誤",
-      [`無法解析日期時間: ${data.date} ${data.time}`, "請使用格式: 20251215 14:00 或 2025-12-15 14:00 (例如: 20251215 14:00)"]
+      [`無法解析日期時間: ${data.date} ${data.time}`, "請使用格式: YYYYMMDD HHMM (例如: 20251215 1400)"]
     );
     await interaction.editReply({ embeds: [errorEmbed] });
     tempMeetingData.delete(userId);

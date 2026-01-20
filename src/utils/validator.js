@@ -39,9 +39,9 @@ class Validator {
       }
     }
 
-    // 時間驗證
+    // 時間驗證 (parseTime 會將 HHMM 轉為 HH:MM)
     if (data.time && !/^\d{2}:\d{2}$/.test(data.time)) {
-      errors.push('時間格式錯誤 (應為 HH:MM)');
+      errors.push('時間格式錯誤 (應為 HHMM，例如 1400)');
     }
 
     // 標題長度
