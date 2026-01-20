@@ -87,6 +87,34 @@ class CalendarService {
   }
 
   /**
+   * 根據會議類型和地點取得 Google Calendar 顏色 ID
+   * - 線上會議 → 香蕉黃 (colorId: 5)
+   * - TRB/TRB工作室 → 紅鶴色 (colorId: 4)
+   * - 其他線下會議 → 藍莓色 (colorId: 9)
+   * @param {string} meetingType - 會議類型
+   * @param {string} location - 會議地點
+   * @returns {string} - Google Calendar colorId
+   */
+  getMeetingColorId(meetingType, location) {
+    // 線上會議 → 香蕉黃
+    if (meetingType === '線上會議') {
+      return '5';
+    }
+
+    // 線下會議：檢查地點
+    if (location) {
+      const locationUpper = location.toUpperCase();
+      // TRB 或 TRB工作室 → 紅鶴色
+      if (locationUpper.includes('TRB') || location.includes('TRB工作室')) {
+        return '4';
+      }
+    }
+
+    // 其他線下會議 → 藍莓色
+    return '9';
+  }
+
+  /**
    * 建立會議
    * @param {Object} meetingData - 會議資料
    * @returns {Promise<Object>} - 建立的事件資料
@@ -97,10 +125,14 @@ class CalendarService {
       const startTime = parseDate(`${meetingData.date} ${meetingData.time}`, 'YYYY-MM-DD HH:mm');
       const endTime = startTime.add(meetingData.duration || 2, 'hour');
 
+      // 根據會議類型和地點決定顏色
+      const colorId = this.getMeetingColorId(meetingData.type, meetingData.location);
+
       const event = {
         summary: `[${meetingData.type}] ${meetingData.title}`,
         location: meetingData.location,
         description: this.formatDescription(meetingData),
+        colorId: colorId,
         start: {
           dateTime: startTime.toISOString(),
           timeZone: config.timezone,
@@ -248,6 +280,14 @@ class CalendarService {
             }),
           },
         };
+      }
+
+      // 更新顏色 (當 type 或 location 變更時)
+      if (meetingData.type || meetingData.location) {
+        const currentDiscordInfo = this.getDiscordInfo(event);
+        const effectiveType = meetingData.type || currentDiscordInfo.meeting_type || '線下會議';
+        const effectiveLocation = meetingData.location || event.location || '';
+        event.colorId = this.getMeetingColorId(effectiveType, effectiveLocation);
       }
 
       const response = await this.calendar.events.update({
