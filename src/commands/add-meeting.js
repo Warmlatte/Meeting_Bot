@@ -142,9 +142,9 @@ export async function showDetailsModal(interaction) {
 
   const dateTimeInput = new TextInputBuilder()
     .setCustomId("meeting_datetime")
-    .setLabel("會議日期與時間 (格式: YYYYMMDD HHMM)")
+    .setLabel("會議日期與時間 (YYYYMMDD HHMM / YYMMDDHHMM)")
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder("例如: 20251215 1400")
+    .setPlaceholder("例如: 20251215 1400 或 2512151400")
     .setRequired(true);
 
   const titleInput = new TextInputBuilder()
@@ -200,19 +200,19 @@ export async function handleModalSubmit(interaction) {
   // 取得 Modal 輸入
   const dateTimeStr = interaction.fields.getTextInputValue("meeting_datetime");
 
-  // 解析日期時間 (格式: "20251215 1400" 或 "2025-12-15 1400")
-  const dateTimeParts = dateTimeStr.trim().split(/\s+/);
-  if (dateTimeParts.length < 2) {
+  // 解析日期時間 (支援: YYYYMMDD HHMM / YYMMDD HHMM / YYMMDDHHMM)
+  const parsedDateTime = Parser.parseDateTimeInput(dateTimeStr);
+  if (!parsedDateTime) {
     const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
       "資料驗證失敗",
-      ["日期時間格式錯誤，請使用格式: YYYYMMDD HHMM (例如: 20251215 1400)"]
+      ["日期時間格式錯誤，請使用格式: YYYYMMDD HHMM 或 YYMMDDHHMM (例如: 20251215 1400 或 2512151400)"]
     );
     await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
     return;
   }
 
-  data.date = Parser.parseDate(dateTimeParts[0]);
-  data.time = Parser.parseTime(dateTimeParts[1]);
+  data.date = parsedDateTime.date;
+  data.time = parsedDateTime.time;
   data.title = interaction.fields.getTextInputValue("meeting_title");
   data.location = interaction.fields.getTextInputValue("meeting_location");
   data.duration = parseFloat(interaction.fields.getTextInputValue("meeting_duration")) || 2;
@@ -243,7 +243,7 @@ export async function handleModalSubmit(interaction) {
   if (!startTime.isValid()) {
     const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
       "日期時間格式錯誤",
-      [`無法解析日期時間: ${data.date} ${data.time}`, "請使用格式: YYYYMMDD HHMM (例如: 20251215 1400)"]
+      [`無法解析日期時間: ${data.date} ${data.time}`, "請使用格式: YYYYMMDD HHMM 或 YYMMDDHHMM (例如: 20251215 1400 或 2512151400)"]
     );
     await interaction.editReply({ embeds: [errorEmbed] });
     tempMeetingData.delete(userId);

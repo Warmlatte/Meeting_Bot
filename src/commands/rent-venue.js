@@ -82,9 +82,9 @@ export async function showDetailsModal(interaction) {
 
   const dateTimeInput = new TextInputBuilder()
     .setCustomId('rental_datetime')
-    .setLabel('日期與開始時間 (格式: YYYYMMDD HHMM)')
+    .setLabel('日期與開始時間 (YYYYMMDD HHMM / YYMMDDHHMM)')
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder('例如: 20251215 1400')
+    .setPlaceholder('例如: 20251215 1400 或 2512151400')
     .setRequired(true);
 
   const titleInput = new TextInputBuilder()
@@ -137,19 +137,19 @@ export async function handleModalSubmit(interaction) {
   const data = tempRentalData.get(userId) || {};
 
   const dateTimeStr = interaction.fields.getTextInputValue('rental_datetime');
-  const dateTimeParts = dateTimeStr.trim().split(/\s+/);
+  const parsedDateTime = Parser.parseDateTimeInput(dateTimeStr);
 
-  if (dateTimeParts.length < 2) {
+  if (!parsedDateTime) {
     const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
       '格式錯誤',
-      ['日期時間格式錯誤，請使用格式: YYYYMMDD HHMM (例如: 20251215 1400)']
+      ['日期時間格式錯誤，請使用格式: YYYYMMDD HHMM 或 YYMMDDHHMM (例如: 20251215 1400 或 2512151400)']
     );
     await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
     return;
   }
 
-  data.date = Parser.parseDate(dateTimeParts[0]);
-  data.time = Parser.parseTime(dateTimeParts[1]);
+  data.date = parsedDateTime.date;
+  data.time = parsedDateTime.time;
   data.title = interaction.fields.getTextInputValue('rental_title');
   data.duration = parseFloat(interaction.fields.getTextInputValue('rental_duration')) || CONSTANTS.DEFAULTS.RENTAL_DURATION;
   data.renter_name = interaction.fields.getTextInputValue('rental_renter_name');
