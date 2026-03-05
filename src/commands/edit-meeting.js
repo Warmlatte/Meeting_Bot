@@ -42,6 +42,16 @@ export default {
       // 取得會議資料
       const meeting = await calendarService.getMeeting(meetingId);
 
+      // 確認不是租借事件
+      if (meeting.event_type === 'venue_rental') {
+        const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
+          '操作失敗',
+          ['此 ID 是場地租借事件，請使用 /edit-rental 編輯租借']
+        );
+        await interaction.editReply({ embeds: [errorEmbed] });
+        return;
+      }
+
       // 檢查權限 (只有建立者可以編輯)
       if (meeting.discordInfo?.creator_id !== interaction.user.id) {
         // 檢查是否為管理員
@@ -283,7 +293,7 @@ export async function showDetailsModal(interaction) {
   const dateInput = new TextInputBuilder()
     .setCustomId('meeting_date')
     .setLabel('會議日期')
-    .setPlaceholder('例如: 2025-01-15 或 25/1/15')
+    .setPlaceholder('例如: 2025-01-15 或 251215 (YYMMDD)')
     .setStyle(TextInputStyle.Short)
     .setValue(startTime.format('YYYY-MM-DD'))
     .setRequired(true);
