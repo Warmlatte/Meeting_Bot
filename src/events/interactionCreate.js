@@ -124,7 +124,11 @@ export default {
         await interaction.update({ content: '❌ 已取消租借登記', embeds: [], components: [] });
       }
       // edit-rental 按鈕
-      else if (interaction.customId === 'edit_rental_confirm') {
+      else if (interaction.customId === 'edit_rental_open_modal') {
+        await editRentalHandlers.handleOpenModal(interaction);
+      } else if (interaction.customId === 'edit_rental_cancel_edit') {
+        await editRentalHandlers.handleCancelEditButton(interaction);
+      } else if (interaction.customId === 'edit_rental_confirm') {
         await editRentalHandlers.handleConfirmUpdate(interaction);
       } else if (interaction.customId === 'edit_rental_cancel') {
         await editRentalHandlers.handleCancelUpdate(interaction);

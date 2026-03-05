@@ -6,6 +6,7 @@ import {
   TextInputStyle,
   ButtonBuilder,
   ButtonStyle,
+  EmbedBuilder,
   MessageFlags,
 } from 'discord.js';
 import CalendarService from '../services/calendar.js';
@@ -41,7 +42,7 @@ export default {
       if (rental.event_type !== 'venue_rental') {
         const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
           '操作失敗',
-          ['此 ID 不是租借事件，請使用 /cancel-meeting 取消會議']
+          ['此 ID 不是租借事件，請使用 /edit-meeting 編輯會議']
         );
         await interaction.editReply({ embeds: [errorEmbed] });
         return;
@@ -59,59 +60,35 @@ export default {
       const endTime = createDate(rental.endTime);
       const durationHours = endTime.diff(startTime, 'hour', true);
 
-      // 顯示 Modal
-      const modal = new ModalBuilder()
-        .setCustomId('edit_rental_modal')
-        .setTitle('編輯場地租借');
+      // 顯示當前資料摘要 + 開啟編輯按鈕
+      const infoEmbed = new EmbedBuilder()
+        .setColor(CONSTANTS.COLORS.PRIMARY)
+        .setTitle('📝 編輯場地租借')
+        .setDescription('確認後點擊「開啟編輯表單」進行修改')
+        .addFields(
+          { name: '📋 活動標題', value: rental.title || '未設定', inline: false },
+          { name: '📅 日期時間', value: startTime.format('YYYY-MM-DD HH:mm'), inline: true },
+          { name: '⏱️ 時長', value: `${durationHours} 小時`, inline: true },
+          { name: '👤 租借人', value: rental.renter_name || '未設定', inline: true },
+        )
+        .setTimestamp();
 
-      const dateTimeInput = new TextInputBuilder()
-        .setCustomId('edit_rental_datetime')
-        .setLabel('日期與開始時間 (格式: YYYYMMDD HHMM)')
-        .setStyle(TextInputStyle.Short)
-        .setValue(`${startTime.format('YYYYMMDD')} ${startTime.format('HHmm')}`)
-        .setRequired(true);
+      const openModalButton = new ButtonBuilder()
+        .setCustomId('edit_rental_open_modal')
+        .setLabel('開啟編輯表單')
+        .setStyle(ButtonStyle.Primary)
+        .setEmoji('📝');
 
-      const titleInput = new TextInputBuilder()
-        .setCustomId('edit_rental_title')
-        .setLabel('活動標題')
-        .setStyle(TextInputStyle.Short)
-        .setMaxLength(100)
-        .setValue(rental.title || '')
-        .setRequired(true);
+      const cancelButton = new ButtonBuilder()
+        .setCustomId('edit_rental_cancel_edit')
+        .setLabel('取消')
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji('❌');
 
-      const durationInput = new TextInputBuilder()
-        .setCustomId('edit_rental_duration')
-        .setLabel('活動時長 (小時)')
-        .setStyle(TextInputStyle.Short)
-        .setValue(String(durationHours))
-        .setRequired(true);
-
-      const renterInput = new TextInputBuilder()
-        .setCustomId('edit_rental_renter_name')
-        .setLabel('租借人名稱')
-        .setStyle(TextInputStyle.Short)
-        .setValue(rental.renter_name || '')
-        .setRequired(true);
-
-      const contentInput = new TextInputBuilder()
-        .setCustomId('edit_rental_content')
-        .setLabel('活動內容')
-        .setStyle(TextInputStyle.Paragraph)
-        .setMaxLength(1000)
-        .setValue(rental.content || '')
-        .setRequired(false);
-
-      modal.addComponents(
-        new ActionRowBuilder().addComponents(dateTimeInput),
-        new ActionRowBuilder().addComponents(titleInput),
-        new ActionRowBuilder().addComponents(durationInput),
-        new ActionRowBuilder().addComponents(renterInput),
-        new ActionRowBuilder().addComponents(contentInput),
-      );
-
-      // 先關閉 deferred reply，再顯示 Modal
-      await interaction.deleteReply();
-      await interaction.showModal(modal);
+      await interaction.editReply({
+        embeds: [infoEmbed],
+        components: [new ActionRowBuilder().addComponents(openModalButton, cancelButton)],
+      });
     } catch (error) {
       console.error('❌ 載入租借事件失敗:', error);
       const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
@@ -122,6 +99,86 @@ export default {
     }
   },
 };
+
+/**
+ * 處理「開啟編輯表單」按鈕 - 顯示 Modal (button 是新的 interaction，可呼叫 showModal)
+ */
+export async function handleOpenModal(interaction) {
+  const userId = interaction.user.id;
+  const stored = tempEditRentalData.get(userId);
+
+  if (!stored) {
+    await interaction.reply({
+      content: '❌ 找不到編輯資料，請重新執行 /edit-rental',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const { rental } = stored;
+  const startTime = createDate(rental.startTime);
+  const endTime = createDate(rental.endTime);
+  const durationHours = endTime.diff(startTime, 'hour', true);
+
+  const modal = new ModalBuilder()
+    .setCustomId('edit_rental_modal')
+    .setTitle('編輯場地租借');
+
+  const dateTimeInput = new TextInputBuilder()
+    .setCustomId('edit_rental_datetime')
+    .setLabel('日期與開始時間 (YYYYMMDD HHMM / YYMMDDHHMM)')
+    .setStyle(TextInputStyle.Short)
+    .setValue(`${startTime.format('YYYYMMDD')} ${startTime.format('HHmm')}`)
+    .setRequired(true);
+
+  const titleInput = new TextInputBuilder()
+    .setCustomId('edit_rental_title')
+    .setLabel('活動標題')
+    .setStyle(TextInputStyle.Short)
+    .setMaxLength(100)
+    .setValue(rental.title || '')
+    .setRequired(true);
+
+  const durationInput = new TextInputBuilder()
+    .setCustomId('edit_rental_duration')
+    .setLabel('活動時長 (小時)')
+    .setStyle(TextInputStyle.Short)
+    .setValue(String(durationHours))
+    .setRequired(true);
+
+  const renterInput = new TextInputBuilder()
+    .setCustomId('edit_rental_renter_name')
+    .setLabel('租借人名稱')
+    .setStyle(TextInputStyle.Short)
+    .setValue(rental.renter_name || '')
+    .setRequired(true);
+
+  const contentInput = new TextInputBuilder()
+    .setCustomId('edit_rental_content')
+    .setLabel('活動內容')
+    .setStyle(TextInputStyle.Paragraph)
+    .setMaxLength(1000)
+    .setValue(rental.content || '')
+    .setRequired(false);
+
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(dateTimeInput),
+    new ActionRowBuilder().addComponents(titleInput),
+    new ActionRowBuilder().addComponents(durationInput),
+    new ActionRowBuilder().addComponents(renterInput),
+    new ActionRowBuilder().addComponents(contentInput),
+  );
+
+  await interaction.showModal(modal);
+}
+
+/**
+ * 處理「取消」按鈕
+ */
+export async function handleCancelEditButton(interaction) {
+  tempEditRentalData.delete(interaction.user.id);
+  await interaction.update({ content: '❌ 已取消編輯', embeds: [], components: [] });
+}
 
 /**
  * 處理 Modal 提交
@@ -141,20 +198,20 @@ export async function handleModalSubmit(interaction) {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const dateTimeStr = interaction.fields.getTextInputValue('edit_rental_datetime');
-  const dateTimeParts = dateTimeStr.trim().split(/\s+/);
+  const parsedDateTime = Parser.parseDateTimeInput(dateTimeStr);
 
-  if (dateTimeParts.length < 2) {
+  if (!parsedDateTime) {
     const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
       '格式錯誤',
-      ['日期時間格式錯誤，請使用格式: YYYYMMDD HHMM']
+      ['日期時間格式錯誤，請使用格式: YYYYMMDD HHMM 或 YYMMDDHHMM (例如: 20251215 1400 或 2512151400)']
     );
     await interaction.editReply({ embeds: [errorEmbed] });
     return;
   }
 
   const updateData = {
-    date: Parser.parseDate(dateTimeParts[0]),
-    time: Parser.parseTime(dateTimeParts[1]),
+    date: parsedDateTime.date,
+    time: parsedDateTime.time,
     title: interaction.fields.getTextInputValue('edit_rental_title'),
     duration: parseFloat(interaction.fields.getTextInputValue('edit_rental_duration')) || CONSTANTS.DEFAULTS.RENTAL_DURATION,
     renter_name: interaction.fields.getTextInputValue('edit_rental_renter_name'),
