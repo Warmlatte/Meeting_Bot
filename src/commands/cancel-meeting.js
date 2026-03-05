@@ -187,6 +187,10 @@ export async function handleCancelConfirm(interaction, meetingId) {
     const scheduler = interaction.client.scheduler;
     if (scheduler) {
       await scheduler.triggerBoardUpdate();
+      // 若地點含 TRB，也更新場地布告欄
+      if (meeting.location && meeting.location.toUpperCase().includes('TRB')) {
+        await scheduler.triggerVenueBoardUpdate();
+      }
       console.log("[CancelMeeting] 已觸發布告欄更新");
     }
 

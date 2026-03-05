@@ -3,6 +3,10 @@ import * as addMeetingHandlers from '../commands/add-meeting.js';
 import * as listMeetingHandlers from '../commands/list-meetings.js';
 import * as editMeetingHandlers from '../commands/edit-meeting.js';
 import * as cancelMeetingHandlers from '../commands/cancel-meeting.js';
+import * as rentVenueHandlers from '../commands/rent-venue.js';
+import * as editRentalHandlers from '../commands/edit-rental.js';
+import * as cancelRentalHandlers from '../commands/cancel-rental.js';
+import * as listRentalsHandlers from '../commands/list-rentals.js';
 
 export default {
   name: Events.InteractionCreate,
@@ -52,6 +56,10 @@ export default {
       } else if (interaction.customId === 'edit_meeting_minute') {
         await editMeetingHandlers.handleMinuteSelection(interaction);
       }
+      // list-rentals 選單
+      else if (interaction.customId === 'rental_list_filter') {
+        await listRentalsHandlers.handleFilterSelection(interaction);
+      }
     }
 
     if (interaction.isUserSelectMenu()) {
@@ -59,6 +67,10 @@ export default {
         await addMeetingHandlers.handleParticipantsSelection(interaction);
       } else if (interaction.customId === 'edit_meeting_participants') {
         await editMeetingHandlers.handleParticipantsSelection(interaction);
+      }
+      // rent-venue 登記者選擇
+      else if (interaction.customId === 'rental_registrar') {
+        await rentVenueHandlers.handleRegistrarSelection(interaction);
       }
     }
 
@@ -68,7 +80,6 @@ export default {
       if (interaction.customId === 'meeting_show_modal') {
         await addMeetingHandlers.showDetailsModal(interaction);
       } else if (interaction.customId === 'meeting_confirm_create') {
-        // 取得儲存的資料並建立會議
         await interaction.deferUpdate();
         const userId = interaction.user.id;
         const data = addMeetingHandlers.tempMeetingData.get(userId);
@@ -99,6 +110,36 @@ export default {
       } else if (interaction.customId === 'cancel_meeting_abort') {
         await cancelMeetingHandlers.handleCancelAbort(interaction);
       }
+      // rent-venue 按鈕
+      else if (interaction.customId === 'rental_show_modal') {
+        await rentVenueHandlers.showDetailsModal(interaction);
+      } else if (interaction.customId === 'rental_confirm_create') {
+        await interaction.deferUpdate();
+        const userId = interaction.user.id;
+        const data = rentVenueHandlers.tempRentalData.get(userId);
+        if (data) {
+          await rentVenueHandlers.createRental(interaction, data);
+        }
+      } else if (interaction.customId === 'rental_cancel_create') {
+        await interaction.update({ content: '❌ 已取消租借登記', embeds: [], components: [] });
+      }
+      // edit-rental 按鈕
+      else if (interaction.customId === 'edit_rental_confirm') {
+        await editRentalHandlers.handleConfirmUpdate(interaction);
+      } else if (interaction.customId === 'edit_rental_cancel') {
+        await editRentalHandlers.handleCancelUpdate(interaction);
+      }
+      // cancel-rental 按鈕
+      else if (interaction.customId.startsWith('cancel_rental_confirm_')) {
+        const eventId = interaction.customId.replace('cancel_rental_confirm_', '');
+        await cancelRentalHandlers.handleCancelConfirm(interaction, eventId);
+      } else if (interaction.customId === 'cancel_rental_abort') {
+        await cancelRentalHandlers.handleCancelAbort(interaction);
+      }
+      // list-rentals 分頁按鈕
+      else if (interaction.customId === 'rental_list_prev' || interaction.customId === 'rental_list_next') {
+        await listRentalsHandlers.handlePaginationButton(interaction);
+      }
     }
 
     // 處理 Modal 提交
@@ -107,6 +148,14 @@ export default {
         await addMeetingHandlers.handleModalSubmit(interaction);
       } else if (interaction.customId === 'edit_meeting_details_modal') {
         await editMeetingHandlers.handleModalSubmit(interaction);
+      }
+      // rent-venue modal
+      else if (interaction.customId === 'rental_details_modal') {
+        await rentVenueHandlers.handleModalSubmit(interaction);
+      }
+      // edit-rental modal
+      else if (interaction.customId === 'edit_rental_modal') {
+        await editRentalHandlers.handleModalSubmit(interaction);
       }
     }
   },

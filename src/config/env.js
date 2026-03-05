@@ -19,6 +19,7 @@ const config = {
     clientId: process.env.DISCORD_CLIENT_ID,
     guildId: process.env.GUILD_ID,
     boardChannelId: process.env.BOARD_CHANNEL_ID,
+    venueBoardChannelId: process.env.VENUE_BOARD_CHANNEL_ID,
   },
 
   // Google API 設定

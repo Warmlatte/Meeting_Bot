@@ -392,8 +392,29 @@ export async function handleModalSubmit(interaction) {
       return;
     }
 
-    // 更新會議
     const calendarService = new CalendarService();
+
+    // 若地點包含 TRB，檢查場地衝突（排除自身事件）
+    if (location && location.toUpperCase().includes('TRB')) {
+      const startTime = Parser.combineDateTime(date, time);
+      if (startTime.isValid()) {
+        const endTime = startTime.add(duration, 'hour');
+        const venueConflict = await calendarService.checkVenueConflicts(
+          startTime.toISOString(),
+          endTime.toISOString(),
+          editData.id
+        );
+
+        if (venueConflict.hasConflict) {
+          const conflictEmbed = EmbedBuilderUtil.createVenueConflictEmbed(venueConflict);
+          await interaction.editReply({ embeds: [conflictEmbed] });
+          editingMeetings.delete(userId);
+          return;
+        }
+      }
+    }
+
+    // 更新會議
     const event = await calendarService.updateMeeting(editData.id, meetingData);
 
     const confirmEmbed = EmbedBuilderUtil.createMeetingConfirmEmbed(meetingData, event);
@@ -420,6 +441,10 @@ export async function handleModalSubmit(interaction) {
     const scheduler = interaction.client.scheduler;
     if (scheduler) {
       await scheduler.triggerBoardUpdate();
+      // 若地點含 TRB，也更新場地布告欄
+      if (location && location.toUpperCase().includes('TRB')) {
+        await scheduler.triggerVenueBoardUpdate();
+      }
       console.log('[EditMeeting] 已觸發布告欄更新');
     }
 

@@ -258,21 +258,38 @@ export async function handleModalSubmit(interaction) {
     data.participants
   );
 
-  if (conflictCheck.hasConflict) {
-    const conflictEmbed = EmbedBuilderUtil.createConflictEmbed(conflictCheck);
+  // 若地點包含 TRB，額外檢查場地衝突
+  let venueConflict = { hasConflict: false, conflicts: [] };
+  if (data.location && data.location.toUpperCase().includes('TRB')) {
+    venueConflict = await calendarService.checkVenueConflicts(
+      startTime.toISOString(),
+      endTime.toISOString()
+    );
+  }
+
+  const hasAnyConflict = conflictCheck.hasConflict || venueConflict.hasConflict;
+
+  if (hasAnyConflict) {
+    const embeds = [];
+    if (conflictCheck.hasConflict) {
+      embeds.push(EmbedBuilderUtil.createConflictEmbed(conflictCheck));
+    }
+    if (venueConflict.hasConflict) {
+      embeds.push(EmbedBuilderUtil.createVenueConflictEmbed(venueConflict));
+    }
 
     const confirmButton = new ButtonBuilder()
-      .setCustomId("meeting_confirm_create")
-      .setLabel("確認建立")
+      .setCustomId('meeting_confirm_create')
+      .setLabel('確認建立')
       .setStyle(ButtonStyle.Success);
 
     const cancelButton = new ButtonBuilder()
-      .setCustomId("meeting_cancel_create")
-      .setLabel("取消")
+      .setCustomId('meeting_cancel_create')
+      .setLabel('取消')
       .setStyle(ButtonStyle.Danger);
 
     await interaction.editReply({
-      embeds: [conflictEmbed],
+      embeds,
       components: [
         new ActionRowBuilder().addComponents(confirmButton, cancelButton),
       ],
@@ -322,6 +339,10 @@ export async function createMeeting(interaction, data) {
     const scheduler = interaction.client.scheduler;
     if (scheduler) {
       await scheduler.triggerBoardUpdate();
+      // 若地點含 TRB，也更新場地布告欄
+      if (data.location && data.location.toUpperCase().includes('TRB')) {
+        await scheduler.triggerVenueBoardUpdate();
+      }
       console.log('[AddMeeting] 已觸發布告欄更新');
     }
 

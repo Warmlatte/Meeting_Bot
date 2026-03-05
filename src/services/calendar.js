@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { parseDate } from '../utils/date-utils.js';
 import config from '../config/env.js';
+import CONSTANTS from '../config/constants.js';
 
 /**
  * Google Calendar 服務類別
@@ -409,6 +410,167 @@ class CalendarService {
   }
 
   /**
+   * 建立租借事件
+   * @param {Object} rentalData - 租借資料
+   * @returns {Promise<Object>} - 建立的事件資料
+   */
+  async createRental(rentalData) {
+    try {
+      const startTime = parseDate(`${rentalData.date} ${rentalData.time}`, 'YYYY-MM-DD HH:mm');
+      const endTime = startTime.add(rentalData.duration || CONSTANTS.DEFAULTS.RENTAL_DURATION, 'hour');
+
+      const event = {
+        summary: `[${CONSTANTS.RENTAL_TYPE}] ${rentalData.title}`,
+        location: CONSTANTS.RENTAL_LOCATION,
+        description: this.formatRentalDescription(rentalData),
+        colorId: CONSTANTS.RENTAL_COLOR_ID,
+        start: {
+          dateTime: startTime.toISOString(),
+          timeZone: config.timezone,
+        },
+        end: {
+          dateTime: endTime.toISOString(),
+          timeZone: config.timezone,
+        },
+        extendedProperties: {
+          private: {
+            discord_info: JSON.stringify({
+              guild_id: rentalData.guild_id,
+              channel_id: rentalData.channel_id,
+              creator_id: rentalData.creator_id,
+              event_type: 'venue_rental',
+              renter_name: rentalData.renter_name,
+              registrar_id: rentalData.registrar_id,
+              registrar_name: rentalData.registrar_name,
+            }),
+          },
+        },
+      };
+
+      const response = await this.calendar.events.insert({
+        calendarId: this.calendarId,
+        resource: event,
+      });
+
+      console.log(`✅ 租借事件已建立: ${response.data.id}`);
+      return response.data;
+    } catch (error) {
+      console.error('❌ 建立租借事件失敗:', error);
+      throw new Error(`建立租借事件失敗: ${error.message}`);
+    }
+  }
+
+  /**
+   * 更新租借事件
+   * @param {string} eventId - 事件 ID
+   * @param {Object} rentalData - 更新的租借資料
+   * @returns {Promise<Object>} - 更新後的事件資料
+   */
+  async updateRental(eventId, rentalData) {
+    try {
+      const event = await this._getRawEvent(eventId);
+
+      if (rentalData.title) {
+        event.summary = `[${CONSTANTS.RENTAL_TYPE}] ${rentalData.title}`;
+      }
+      if (rentalData.content || rentalData.renter_name) {
+        event.description = this.formatRentalDescription(rentalData);
+      }
+      if (rentalData.date || rentalData.time) {
+        const startTime = parseDate(`${rentalData.date} ${rentalData.time}`, 'YYYY-MM-DD HH:mm');
+        const endTime = startTime.add(rentalData.duration || CONSTANTS.DEFAULTS.RENTAL_DURATION, 'hour');
+        event.start = { dateTime: startTime.toISOString(), timeZone: config.timezone };
+        event.end = { dateTime: endTime.toISOString(), timeZone: config.timezone };
+      }
+
+      const currentDiscordInfo = this.getDiscordInfo(event);
+      event.extendedProperties = {
+        private: {
+          discord_info: JSON.stringify({
+            guild_id: currentDiscordInfo.guild_id,
+            channel_id: currentDiscordInfo.channel_id,
+            creator_id: currentDiscordInfo.creator_id,
+            event_type: 'venue_rental',
+            renter_name: rentalData.renter_name || currentDiscordInfo.renter_name,
+            registrar_id: currentDiscordInfo.registrar_id,
+            registrar_name: currentDiscordInfo.registrar_name,
+          }),
+        },
+      };
+
+      const response = await this.calendar.events.update({
+        calendarId: this.calendarId,
+        eventId: eventId,
+        resource: event,
+      });
+
+      console.log(`✅ 租借事件已更新: ${eventId}`);
+      return response.data;
+    } catch (error) {
+      console.error('❌ 更新租借事件失敗:', error);
+      throw new Error(`更新租借事件失敗: ${error.message}`);
+    }
+  }
+
+  /**
+   * 查詢租借事件列表
+   * @param {string} timeMin - 開始時間 (ISO 格式)
+   * @param {string} timeMax - 結束時間 (ISO 格式)
+   * @returns {Promise<Array>} - 租借事件列表
+   */
+  async listRentals(timeMin, timeMax) {
+    try {
+      const events = await this.listMeetings(timeMin, timeMax);
+      return events.filter(event => {
+        const discordInfo = this.getDiscordInfo(event);
+        return discordInfo.event_type === 'venue_rental';
+      }).map(event => this.parseMeetingEvent(event));
+    } catch (error) {
+      console.error('❌ 查詢租借列表失敗:', error);
+      throw new Error(`查詢租借列表失敗: ${error.message}`);
+    }
+  }
+
+  /**
+   * 檢查 TRB 場地時間衝突
+   * @param {string} startTime - 開始時間 (ISO 格式)
+   * @param {string} endTime - 結束時間 (ISO 格式)
+   * @param {string} [excludeEventId] - 排除的事件 ID（編輯時使用）
+   * @returns {Promise<Object>} - 衝突資訊 { hasConflict, conflicts }
+   */
+  async checkVenueConflicts(startTime, endTime, excludeEventId = null) {
+    try {
+      const events = await this.listMeetings(startTime, endTime);
+      const conflicts = events.filter(event => {
+        if (excludeEventId && event.id === excludeEventId) return false;
+        return event.location && event.location.toUpperCase().includes('TRB');
+      });
+
+      return {
+        hasConflict: conflicts.length > 0,
+        conflicts: conflicts,
+      };
+    } catch (error) {
+      console.error('❌ 檢查場地衝突失敗:', error);
+      return { hasConflict: false, conflicts: [] };
+    }
+  }
+
+  /**
+   * 格式化租借描述
+   * @param {Object} data - 租借資料
+   * @returns {string} - 格式化的描述
+   */
+  formatRentalDescription(data) {
+    return `=== 活動內容 ===
+${data.content || '無'}
+
+=== 租借資訊 ===
+租借人: ${data.renter_name || '未設定'}
+登記者: @${data.registrar_name || '未設定'}`;
+  }
+
+  /**
    * 格式化會議描述
    * @param {Object} data - 會議資料
    * @returns {string} - 格式化的描述
@@ -469,6 +631,11 @@ ${data.participants ? data.participants.map(p => `@${p.name}`).join(' ') : '無'
       participants: discordInfo?.participants || [],
       content: parsedDesc.content,
       discordInfo: discordInfo,
+      // 租借事件額外欄位
+      event_type: discordInfo?.event_type || null,
+      renter_name: discordInfo?.renter_name || null,
+      registrar_id: discordInfo?.registrar_id || null,
+      registrar_name: discordInfo?.registrar_name || null,
     };
   }
 }

@@ -86,6 +86,13 @@ class Scheduler {
   }
 
   /**
+   * 即時更新場地布告欄 (供外部呼叫)
+   */
+  async triggerVenueBoardUpdate() {
+    await this.updateBoardJob.quickVenueUpdate();
+  }
+
+  /**
    * 列出任務排程
    */
   logSchedule() {

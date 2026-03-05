@@ -30,6 +30,10 @@ import cancelMeeting from "./commands/cancel-meeting.js";
 import userMeetings from "./commands/user-meetings.js";
 import testReminder from "./commands/test-reminder.js";
 import updateBoard from "./commands/update-board.js";
+import rentVenue from "./commands/rent-venue.js";
+import editRental from "./commands/edit-rental.js";
+import cancelRental from "./commands/cancel-rental.js";
+import listRentals from "./commands/list-rentals.js";
 
 // 註冊指令到 client 和註冊陣列
 client.commands.set(addMeeting.data.name, addMeeting);
@@ -39,6 +43,10 @@ client.commands.set(cancelMeeting.data.name, cancelMeeting);
 client.commands.set(userMeetings.data.name, userMeetings);
 client.commands.set(testReminder.data.name, testReminder);
 client.commands.set(updateBoard.data.name, updateBoard);
+client.commands.set(rentVenue.data.name, rentVenue);
+client.commands.set(editRental.data.name, editRental);
+client.commands.set(cancelRental.data.name, cancelRental);
+client.commands.set(listRentals.data.name, listRentals);
 
 // 建立指令註冊陣列
 const commands = [];
@@ -49,6 +57,10 @@ commands.push(cancelMeeting.data.toJSON());
 commands.push(userMeetings.data.toJSON());
 commands.push(testReminder.data.toJSON());
 commands.push(updateBoard.data.toJSON());
+commands.push(rentVenue.data.toJSON());
+commands.push(editRental.data.toJSON());
+commands.push(cancelRental.data.toJSON());
+commands.push(listRentals.data.toJSON());
 
 // 載入事件處理器
 import ready from "./events/ready.js";

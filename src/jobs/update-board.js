@@ -40,6 +40,33 @@ class UpdateBoardJob {
     } catch (error) {
       console.error('[UpdateBoardJob] 更新失敗:', error);
     }
+
+    // 更新場地布告欄（如有設定頻道）
+    await this.executeVenueBoard();
+  }
+
+  /**
+   * 執行場地布告欄更新
+   */
+  async executeVenueBoard() {
+    if (!config.discord.venueBoardChannelId) {
+      return; // 未設定場地布告欄頻道，跳過
+    }
+
+    try {
+      const venueChannel = await this.client.channels.fetch(config.discord.venueBoardChannelId);
+      if (!venueChannel) {
+        console.error('[UpdateBoardJob] 找不到場地布告欄頻道');
+        return;
+      }
+
+      await this.updateVenueTodayBoard(venueChannel);
+      await this.updateVenueWeekBoard(venueChannel);
+
+      console.log('[UpdateBoardJob] ✅ 場地布告欄更新完成');
+    } catch (error) {
+      console.error('[UpdateBoardJob] 場地布告欄更新失敗:', error);
+    }
   }
 
   /**
@@ -160,11 +187,83 @@ class UpdateBoardJob {
   }
 
   /**
+   * 更新場地布告欄今日
+   */
+  async updateVenueTodayBoard(venueChannel) {
+    console.log('[UpdateBoardJob] 更新場地布告欄今日...');
+
+    const timeMin = getTodayStart();
+    const timeMax = getTodayEnd();
+
+    const events = await this.calendarService.listMeetings(timeMin, timeMax);
+    const trbSlots = events.filter(e => e.location && e.location.toUpperCase().includes('TRB'));
+
+    const embed = EmbedBuilderUtil.createVenueBoardTodayEmbed(trbSlots);
+    const messageId = boardManager.getVenueTodayMessageId();
+
+    try {
+      if (messageId) {
+        const message = await venueChannel.messages.fetch(messageId);
+        await message.edit({ embeds: [embed] });
+        console.log('[UpdateBoardJob] ✅ 已更新場地布告欄今日訊息');
+      } else {
+        const message = await venueChannel.send({ embeds: [embed] });
+        boardManager.setVenueTodayMessageId(message.id);
+        console.log('[UpdateBoardJob] ✅ 已建立場地布告欄今日訊息');
+      }
+    } catch (error) {
+      console.log('[UpdateBoardJob] 場地布告欄今日舊訊息不存在,重新建立...');
+      const message = await venueChannel.send({ embeds: [embed] });
+      boardManager.setVenueTodayMessageId(message.id);
+    }
+  }
+
+  /**
+   * 更新場地布告欄本週
+   */
+  async updateVenueWeekBoard(venueChannel) {
+    console.log('[UpdateBoardJob] 更新場地布告欄本週...');
+
+    const timeMin = getThisWeekStart();
+    const timeMax = getThisWeekEnd();
+
+    const events = await this.calendarService.listMeetings(timeMin, timeMax);
+    const trbSlots = events.filter(e => e.location && e.location.toUpperCase().includes('TRB'));
+
+    const embed = EmbedBuilderUtil.createVenueBoardWeekEmbed(trbSlots);
+    const messageId = boardManager.getVenueWeekMessageId();
+
+    try {
+      if (messageId) {
+        const message = await venueChannel.messages.fetch(messageId);
+        await message.edit({ embeds: [embed] });
+        console.log('[UpdateBoardJob] ✅ 已更新場地布告欄本週訊息');
+      } else {
+        const message = await venueChannel.send({ embeds: [embed] });
+        boardManager.setVenueWeekMessageId(message.id);
+        console.log('[UpdateBoardJob] ✅ 已建立場地布告欄本週訊息');
+      }
+    } catch (error) {
+      console.log('[UpdateBoardJob] 場地布告欄本週舊訊息不存在,重新建立...');
+      const message = await venueChannel.send({ embeds: [embed] });
+      boardManager.setVenueWeekMessageId(message.id);
+    }
+  }
+
+  /**
    * 即時更新布告欄 (會議新增/修改/取消時呼叫)
    */
   async quickUpdate() {
     console.log('[UpdateBoardJob] 執行即時更新...');
     await this.execute();
+  }
+
+  /**
+   * 即時更新場地布告欄
+   */
+  async quickVenueUpdate() {
+    console.log('[UpdateBoardJob] 執行場地布告欄即時更新...');
+    await this.executeVenueBoard();
   }
 }
 

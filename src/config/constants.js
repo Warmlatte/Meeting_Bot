@@ -12,9 +12,15 @@ const CONSTANTS = {
     OFFLINE: '線下會議',
   },
 
+  // 租借類型
+  RENTAL_TYPE: '租借',
+  RENTAL_LOCATION: 'TRB工作室',
+  RENTAL_COLOR_ID: '3', // 葡萄紫
+
   // 預設值
   DEFAULTS: {
     MEETING_DURATION: 2, // 預設會議時長(小時)
+    RENTAL_DURATION: 2,  // 預設租借時長(小時)
     ONLINE_LOCATION: 'DC',
   },
 
