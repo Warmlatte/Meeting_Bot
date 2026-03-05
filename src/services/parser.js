@@ -19,6 +19,14 @@ class Parser {
       return `${year}-${month}-${day}`;
     }
 
+    // 處理 251216 (6位數字格式 YYMMDD)
+    if (/^\d{6}$/.test(dateStr)) {
+      const year = dateStr.substring(0, 2);
+      const month = dateStr.substring(2, 4);
+      const day = dateStr.substring(4, 6);
+      return `20${year}-${month}-${day}`;
+    }
+
     // 處理 25/10/7 或 25/10/07
     if (/^\d{2}\/\d{1,2}\/\d{1,2}$/.test(dateStr)) {
       const [year, month, day] = dateStr.split('/');
@@ -73,11 +81,38 @@ class Parser {
   }
 
   /**
-   * 組合日期時間 (使用 Asia/Taipei 時區)
-   * @param {string} date - 日期 (YYYY-MM-DD)
-   * @param {string} time - 時間 (HH:MM)
-   * @returns {Object} - dayjs 物件 (已設定時區)
+   * 解析日期時間輸入字串 (統一入口)
+   * 支援:
+   *   - YYYYMMDD HHMM (例如: 20251215 1400)
+   *   - YYMMDD HHMM   (例如: 251215 1400)
+   *   - YYMMDDHHMM    (例如: 2512151400, 10位緊湊格式)
+   * @param {string} input - 輸入字串
+   * @returns {{date: string, time: string}|null}
    */
+  static parseDateTimeInput(input) {
+    const str = input.trim();
+
+    // 10位純數字: YYMMDDHHMM (緊湊格式)
+    const compact = str.replace(/\s+/g, '');
+    if (/^\d{10}$/.test(compact)) {
+      return {
+        date: this.parseDate(compact.substring(0, 6)),
+        time: this.parseTime(compact.substring(6, 10)),
+      };
+    }
+
+    // 空格分隔格式: YYYYMMDD HHMM 或 YYMMDD HHMM
+    const parts = str.split(/\s+/);
+    if (parts.length >= 2) {
+      return {
+        date: this.parseDate(parts[0]),
+        time: this.parseTime(parts[1]),
+      };
+    }
+
+    return null;
+  }
+
   static combineDateTime(date, time) {
     // 使用 date-utils 的 parseDate 確保正確的時區
     return parseDateWithTimezone(`${date} ${time}`, 'YYYY-MM-DD HH:mm');
