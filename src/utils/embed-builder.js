@@ -567,6 +567,64 @@ class EmbedBuilderUtil {
   }
 
   /**
+   * 建立場地布告欄下週 Embed
+   * @param {Array} occupiedSlots - TRB 佔用時段 (Google Calendar 原始事件)
+   * @returns {EmbedBuilder}
+   */
+  static createVenueBoardNextWeekEmbed(occupiedSlots) {
+    const nextWeekStart = now().add(1, 'week').startOf('isoWeek');
+    const nextWeekEnd = now().add(1, 'week').endOf('isoWeek');
+
+    const embed = new EmbedBuilder()
+      .setColor(0xe74c3c)
+      .setTitle(`🏢 TRB工作室 下週場地使用 (${nextWeekStart.format('MM/DD')} - ${nextWeekEnd.format('MM/DD')})`)
+      .setTimestamp();
+
+    if (occupiedSlots.length === 0) {
+      embed.setDescription('下週場地全部空閒 🟢');
+      embed.setFooter({ text: 'Meeting Bot • 每日 00:00 自動更新' });
+      return embed;
+    }
+
+    // 按日期分組
+    const byDay = {};
+    for (const slot of occupiedSlots) {
+      const s = createDate(slot.start.dateTime || slot.start.date);
+      const dayKey = s.format('YYYY-MM-DD');
+      if (!byDay[dayKey]) byDay[dayKey] = [];
+      byDay[dayKey].push(slot);
+    }
+
+    let description = '';
+    const dayOfWeekNames = ['日', '一', '二', '三', '四', '五', '六'];
+
+    for (const dayKey of Object.keys(byDay).sort()) {
+      const date = createDate(dayKey);
+      const dow = dayOfWeekNames[date.day()];
+      description += `\n**【${date.format('MM/DD')} 週${dow}】**\n`;
+
+      const sorted = byDay[dayKey].sort((a, b) => {
+        const ta = a.start?.dateTime || a.start?.date || '';
+        const tb = b.start?.dateTime || b.start?.date || '';
+        return ta.localeCompare(tb);
+      });
+
+      for (const slot of sorted) {
+        const s = createDate(slot.start.dateTime || slot.start.date);
+        const e = createDate(slot.end.dateTime || slot.end.date);
+        description += `🔴 **${s.format('HH:mm')} - ${e.format('HH:mm')}** 已佔用\n`;
+      }
+    }
+
+    embed.setDescription(description);
+    embed.setFooter({
+      text: `共 ${occupiedSlots.length} 個時段已佔用 • Meeting Bot • 每日 00:00 自動更新`,
+    });
+
+    return embed;
+  }
+
+  /**
    * 建立場地衝突警告 Embed
    * @param {Object} conflictData - 衝突資料 { hasConflict, conflicts[] }
    * @returns {EmbedBuilder}

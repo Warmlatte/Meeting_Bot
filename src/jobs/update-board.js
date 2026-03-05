@@ -62,6 +62,7 @@ class UpdateBoardJob {
 
       await this.updateVenueTodayBoard(venueChannel);
       await this.updateVenueWeekBoard(venueChannel);
+      await this.updateVenueNextWeekBoard(venueChannel);
 
       console.log('[UpdateBoardJob] ✅ 場地布告欄更新完成');
     } catch (error) {
@@ -247,6 +248,38 @@ class UpdateBoardJob {
       console.log('[UpdateBoardJob] 場地布告欄本週舊訊息不存在,重新建立...');
       const message = await venueChannel.send({ embeds: [embed] });
       boardManager.setVenueWeekMessageId(message.id);
+    }
+  }
+
+  /**
+   * 更新場地布告欄下週
+   */
+  async updateVenueNextWeekBoard(venueChannel) {
+    console.log('[UpdateBoardJob] 更新場地布告欄下週...');
+
+    const timeMin = getNextWeekStart();
+    const timeMax = getNextWeekEnd();
+
+    const events = await this.calendarService.listMeetings(timeMin, timeMax);
+    const trbSlots = events.filter(e => e.location && e.location.toUpperCase().includes('TRB'));
+
+    const embed = EmbedBuilderUtil.createVenueBoardNextWeekEmbed(trbSlots);
+    const messageId = boardManager.getVenueNextWeekMessageId();
+
+    try {
+      if (messageId) {
+        const message = await venueChannel.messages.fetch(messageId);
+        await message.edit({ embeds: [embed] });
+        console.log('[UpdateBoardJob] ✅ 已更新場地布告欄下週訊息');
+      } else {
+        const message = await venueChannel.send({ embeds: [embed] });
+        boardManager.setVenueNextWeekMessageId(message.id);
+        console.log('[UpdateBoardJob] ✅ 已建立場地布告欄下週訊息');
+      }
+    } catch (error) {
+      console.log('[UpdateBoardJob] 場地布告欄下週舊訊息不存在,重新建立...');
+      const message = await venueChannel.send({ embeds: [embed] });
+      boardManager.setVenueNextWeekMessageId(message.id);
     }
   }
 

@@ -42,6 +42,7 @@ class BoardManager {
       nextWeekMessageId: null,
       venueTodayMessageId: null,
       venueWeekMessageId: null,
+      venueNextWeekMessageId: null,
       lastUpdate: null,
     };
   }
@@ -143,6 +144,22 @@ class BoardManager {
   }
 
   /**
+   * 取得場地布告欄下週訊息 ID
+   */
+  getVenueNextWeekMessageId() {
+    return this.data.venueNextWeekMessageId;
+  }
+
+  /**
+   * 設定場地布告欄下週訊息 ID
+   */
+  setVenueNextWeekMessageId(messageId) {
+    this.data.venueNextWeekMessageId = messageId;
+    this.data.lastUpdate = new Date().toISOString();
+    this.save();
+  }
+
+  /**
    * 重置所有訊息 ID (用於重建布告欄)
    */
   reset() {
@@ -152,6 +169,7 @@ class BoardManager {
       nextWeekMessageId: null,
       venueTodayMessageId: null,
       venueWeekMessageId: null,
+      venueNextWeekMessageId: null,
       lastUpdate: null,
     };
     this.save();
