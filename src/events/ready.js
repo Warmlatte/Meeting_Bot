@@ -1,4 +1,4 @@
-import { Events } from 'discord.js';
+import { Events } from "discord.js";
 
 export default {
   name: Events.ClientReady,
@@ -10,8 +10,8 @@ export default {
 
     // 設定 Bot 狀態
     client.user.setPresence({
-      activities: [{ name: '會議管理中 | /help' }],
-      status: 'online',
+      activities: [{ name: "有bug請敲拿鐵鐵 ☕️", type: "WATCHING" }],
+      status: "online",
     });
   },
 };

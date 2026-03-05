@@ -29,3 +29,6 @@ data/
 
 # 設定文件
 /docs
+
+/openspec
+.claude
