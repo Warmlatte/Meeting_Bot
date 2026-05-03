@@ -32,3 +32,6 @@ data/
 
 /openspec
 .claude
+.spectra/
+openspec/.vector-search.db*
+/docs
