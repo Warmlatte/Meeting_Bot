@@ -20,6 +20,10 @@ const config = {
     guildId: process.env.GUILD_ID,
     boardChannelId: process.env.BOARD_CHANNEL_ID,
     venueBoardChannelId: process.env.VENUE_BOARD_CHANNEL_ID,
+    // 允許使用 Bot 的身份組 ID（逗號分隔），空白表示不限制身份組
+    allowedRoleIds: process.env.ALLOWED_ROLE_IDS
+      ? process.env.ALLOWED_ROLE_IDS.split(',').map(id => id.trim()).filter(Boolean)
+      : [],
   },
 
   // Google API 設定
@@ -53,6 +57,7 @@ function validateEnv() {
   const required = [
     'DISCORD_TOKEN',
     'DISCORD_CLIENT_ID',
+    'GUILD_ID',
   ];
 
   const missing = required.filter(key => !process.env[key]);

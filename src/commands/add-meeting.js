@@ -142,9 +142,9 @@ export async function showDetailsModal(interaction) {
 
   const dateTimeInput = new TextInputBuilder()
     .setCustomId("meeting_datetime")
-    .setLabel("會議日期與時間 (YYYYMMDD HHMM / YYMMDDHHMM)")
+    .setLabel("會議日期與時間 (YYMMDDHHmm)")
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder("例如: 20251215 1400 或 2512151400")
+    .setPlaceholder("例如: 2512151400")
     .setRequired(true);
 
   const titleInput = new TextInputBuilder()
@@ -159,7 +159,7 @@ export async function showDetailsModal(interaction) {
     .setCustomId("meeting_location")
     .setLabel("會議地點")
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder(data.location || "例如: TRB工作室")
+    .setPlaceholder("例如: TRB工作室 (輸入 TRB 相關關鍵字將自動同步至工作室場地佔用佈告欄)")
     .setValue(data.location || "")
     .setRequired(true);
 
@@ -260,7 +260,7 @@ export async function handleModalSubmit(interaction) {
 
   // 若地點包含 TRB，額外檢查場地衝突
   let venueConflict = { hasConflict: false, conflicts: [] };
-  if (data.location && data.location.toUpperCase().includes('TRB')) {
+  if (data.location && CONSTANTS.VENUE_KEYWORDS.some(kw => data.location.toUpperCase().includes(kw.toUpperCase()))) {
     venueConflict = await calendarService.checkVenueConflicts(
       startTime.toISOString(),
       endTime.toISOString()
@@ -340,7 +340,7 @@ export async function createMeeting(interaction, data) {
     if (scheduler) {
       await scheduler.triggerBoardUpdate();
       // 若地點含 TRB，也更新場地布告欄
-      if (data.location && data.location.toUpperCase().includes('TRB')) {
+      if (data.location && CONSTANTS.VENUE_KEYWORDS.some(kw => data.location.toUpperCase().includes(kw.toUpperCase()))) {
         await scheduler.triggerVenueBoardUpdate();
       }
       console.log('[AddMeeting] 已觸發布告欄更新');

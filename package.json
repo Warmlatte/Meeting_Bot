@@ -11,7 +11,10 @@
     "dev": "nodemon src/index.js",
     "get-token": "node scripts/get-google-token.js",
     "test-calendar": "node scripts/test-calendar.js",
-    "verify-sa": "node scripts/verify-service-account.js"
+    "verify-sa": "node scripts/verify-service-account.js",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "keywords": [
     "discord",
@@ -32,6 +35,8 @@
     "open": "^10.1.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.3.0",
     "nodemon": "^3.1.11"
   }
 }

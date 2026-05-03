@@ -1,4 +1,5 @@
 import { Events, MessageFlags } from 'discord.js';
+import config from '../config/env.js';
 import * as addMeetingHandlers from '../commands/add-meeting.js';
 import * as listMeetingHandlers from '../commands/list-meetings.js';
 import * as editMeetingHandlers from '../commands/edit-meeting.js';
@@ -11,6 +12,33 @@ import * as listRentalsHandlers from '../commands/list-rentals.js';
 export default {
   name: Events.InteractionCreate,
   async execute(interaction) {
+    // Guild 白名單驗證：僅允許指定伺服器使用
+    if (interaction.guildId !== config.discord.guildId) {
+      if (interaction.isRepliable()) {
+        await interaction.reply({
+          content: '❌ 此 Bot 僅限工作室使用',
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+      return;
+    }
+
+    // 身份組白名單驗證：若有設定 ALLOWED_ROLE_IDS，只允許擁有指定身份組的成員
+    const allowedRoleIds = config.discord.allowedRoleIds;
+    if (allowedRoleIds.length > 0 && interaction.member) {
+      const memberRoles = interaction.member.roles?.cache;
+      const hasAllowedRole = memberRoles && allowedRoleIds.some(roleId => memberRoles.has(roleId));
+      if (!hasAllowedRole) {
+        if (interaction.isRepliable()) {
+          await interaction.reply({
+            content: '❌ 你沒有使用此 Bot 的權限',
+            flags: MessageFlags.Ephemeral,
+          });
+        }
+        return;
+      }
+    }
+
     // 處理斜線指令
     if (interaction.isChatInputCommand()) {
       const command = interaction.client.commands.get(interaction.commandName);

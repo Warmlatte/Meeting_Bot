@@ -17,6 +17,9 @@ const CONSTANTS = {
   RENTAL_LOCATION: 'TRB工作室',
   RENTAL_COLOR_ID: '3', // 葡萄紫
 
+  // TRB 工作室場地佔用觸發關鍵字（不分大小寫比對）
+  VENUE_KEYWORDS: ['TRB', '工作室'],
+
   // 預設值
   DEFAULTS: {
     MEETING_DURATION: 2, // 預設會議時長(小時)

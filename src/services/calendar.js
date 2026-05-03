@@ -106,7 +106,7 @@ class CalendarService {
     if (location) {
       const locationUpper = location.toUpperCase();
       // TRB 或 TRB工作室 → 紅鶴色
-      if (locationUpper.includes('TRB') || location.includes('TRB工作室')) {
+      if (CONSTANTS.VENUE_KEYWORDS.some(kw => locationUpper.includes(kw.toUpperCase()))) {
         return '4';
       }
     }
@@ -543,7 +543,7 @@ class CalendarService {
       const events = await this.listMeetings(startTime, endTime);
       const conflicts = events.filter(event => {
         if (excludeEventId && event.id === excludeEventId) return false;
-        return event.location && event.location.toUpperCase().includes('TRB');
+        return event.location && CONSTANTS.VENUE_KEYWORDS.some(kw => event.location.toUpperCase().includes(kw.toUpperCase()));
       });
 
       return {
@@ -571,16 +571,32 @@ ${data.content || '無'}
   }
 
   /**
-   * 格式化會議描述
+   * 格式化會議描述（三區塊格式）
    * @param {Object} data - 會議資料
    * @returns {string} - 格式化的描述
    */
   formatDescription(data) {
+    const participants = data.participants
+      ? data.participants.map(p => `@${p.name}`).join(' ')
+      : '無';
+
+    const discordJson = JSON.stringify({
+      guild_id: data.guild_id || null,
+      channel_id: data.channel_id || null,
+      creator_id: data.creator_id || null,
+      message_id: data.message_id || null,
+      meeting_type: data.type || null,
+      participants: data.participants || [],
+    }, null, 2);
+
     return `=== 會議內容 ===
 ${data.content || '無'}
 
 === 參加者 ===
-${data.participants ? data.participants.map(p => `@${p.name}`).join(' ') : '無'}`;
+${participants}
+
+=== Discord 資訊 (JSON) ===
+${discordJson}`;
   }
 
   /**
@@ -593,15 +609,45 @@ ${data.participants ? data.participants.map(p => `@${p.name}`).join(' ') : '無'
       return { content: '', participants: '', discordInfo: null };
     }
 
-    const contentMatch = description.match(/=== 會議內容 ===\n(.*?)\n\n/s);
-    const participantsMatch = description.match(/=== 參加者 ===\n(.*?)\n\n/s);
-    const jsonMatch = description.match(/=== Discord 資訊 \(JSON\) ===\n({[\s\S]*})/);
+    const contentMatch = description.match(/=== 會議內容 ===\n([\s\S]*?)\n\n=== 參加者 ===/);
+    const participantsMatch = description.match(/=== 參加者 ===\n([\s\S]*?)(?:\n\n=== Discord 資訊|$)/);
+    const jsonMatch = description.match(/=== Discord 資訊 \(JSON\) ===\n([\s\S]*)/);
+
+    let discordInfo = null;
+    if (jsonMatch) {
+      try {
+        discordInfo = JSON.parse(jsonMatch[1].trim());
+      } catch {
+        discordInfo = null;
+      }
+    }
 
     return {
       content: contentMatch ? contentMatch[1].trim() : '',
       participants: participantsMatch ? participantsMatch[1].trim() : '',
-      discordInfo: jsonMatch ? JSON.parse(jsonMatch[1]) : null,
+      discordInfo,
     };
+  }
+
+  /**
+   * 判斷兩個時間區間是否重疊（純函式，不呼叫 API）
+   * 邊界相接（end1 === start2 或 end2 === start1）視為不重疊
+   * @param {string} start1 - 區間1開始時間 (HH:MM)
+   * @param {string} end1   - 區間1結束時間 (HH:MM)
+   * @param {string} start2 - 區間2開始時間 (HH:MM)
+   * @param {string} end2   - 區間2結束時間 (HH:MM)
+   * @returns {boolean}
+   */
+  static hasConflict(start1, end1, start2, end2) {
+    const toMinutes = (t) => {
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    };
+    const s1 = toMinutes(start1);
+    const e1 = toMinutes(end1);
+    const s2 = toMinutes(start2);
+    const e2 = toMinutes(end2);
+    return s1 < e2 && s2 < e1;
   }
 
   /**

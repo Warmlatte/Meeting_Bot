@@ -310,7 +310,7 @@ export async function showDetailsModal(interaction) {
   const locationInput = new TextInputBuilder()
     .setCustomId('meeting_location')
     .setLabel('會議地點')
-    .setPlaceholder('例如: Discord 語音頻道 或 會議室 A')
+    .setPlaceholder('例如: TRB工作室 (輸入 TRB 相關關鍵字將自動同步至工作室場地佔用佈告欄)')
     .setStyle(TextInputStyle.Short)
     .setValue(meeting.location || '')
     .setMaxLength(100)
@@ -405,7 +405,7 @@ export async function handleModalSubmit(interaction) {
     const calendarService = new CalendarService();
 
     // 若地點包含 TRB，檢查場地衝突（排除自身事件）
-    if (location && location.toUpperCase().includes('TRB')) {
+    if (location && CONSTANTS.VENUE_KEYWORDS.some(kw => location.toUpperCase().includes(kw.toUpperCase()))) {
       const startTime = Parser.combineDateTime(date, time);
       if (startTime.isValid()) {
         const endTime = startTime.add(duration, 'hour');
@@ -452,7 +452,7 @@ export async function handleModalSubmit(interaction) {
     if (scheduler) {
       await scheduler.triggerBoardUpdate();
       // 若地點含 TRB，也更新場地布告欄
-      if (location && location.toUpperCase().includes('TRB')) {
+      if (location && CONSTANTS.VENUE_KEYWORDS.some(kw => location.toUpperCase().includes(kw.toUpperCase()))) {
         await scheduler.triggerVenueBoardUpdate();
       }
       console.log('[EditMeeting] 已觸發布告欄更新');

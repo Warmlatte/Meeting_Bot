@@ -83,10 +83,11 @@ client.once(Events.ClientReady, async (readyClient) => {
 
     console.log(`開始註冊 ${commands.length} 個斜線指令...`);
 
-    // 註冊全域指令
-    const data = await rest.put(Routes.applicationCommands(client.user.id), {
-      body: commands,
-    });
+    // 註冊 Guild 專屬指令（僅在指定伺服器顯示）
+    const data = await rest.put(
+      Routes.applicationGuildCommands(client.user.id, config.discord.guildId),
+      { body: commands }
+    );
 
     console.log(`成功註冊 ${data.length} 個斜線指令!`);
 
