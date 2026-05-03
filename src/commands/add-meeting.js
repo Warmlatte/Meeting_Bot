@@ -76,7 +76,7 @@ function generateStatusMessage(data) {
   }
 
   if (data.participants && data.participants.length > 0) {
-    message += `✅ **參加者**: ${data.participants.length} 位 (${data.participants.map(p => p.name).join(', ')})\n`;
+    message += `✅ **參加者**: ${data.participants.length} 位 (${data.participants.map((p) => p.name).join(", ")})\n`;
   }
 
   if (!data.type || !data.participants || data.participants.length === 0) {
@@ -159,7 +159,9 @@ export async function showDetailsModal(interaction) {
     .setCustomId("meeting_location")
     .setLabel("會議地點")
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder("例如: TRB工作室 (輸入 TRB 相關關鍵字將自動同步至工作室場地佔用佈告欄)")
+    .setPlaceholder(
+      "例如: TRB工作室 (輸入 TRB 相關關鍵字將自動同步至工作室場地佔用佈告欄)",
+    )
     .setValue(data.location || "")
     .setRequired(true);
 
@@ -184,7 +186,7 @@ export async function showDetailsModal(interaction) {
     new ActionRowBuilder().addComponents(titleInput),
     new ActionRowBuilder().addComponents(locationInput),
     new ActionRowBuilder().addComponents(durationInput),
-    new ActionRowBuilder().addComponents(contentInput)
+    new ActionRowBuilder().addComponents(contentInput),
   );
 
   await interaction.showModal(modal);
@@ -200,14 +202,16 @@ export async function handleModalSubmit(interaction) {
   // 取得 Modal 輸入
   const dateTimeStr = interaction.fields.getTextInputValue("meeting_datetime");
 
-  // 解析日期時間 (支援: YYYYMMDD HHMM / YYMMDD HHMM / YYMMDDHHMM)
+  // 解析日期時間 (支援: YYYYMMDD HHMM / YYMMDD HHMM / YYMMDDHHmm)
   const parsedDateTime = Parser.parseDateTimeInput(dateTimeStr);
   if (!parsedDateTime) {
-    const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
-      "資料驗證失敗",
-      ["日期時間格式錯誤，請使用格式: YYYYMMDD HHMM 或 YYMMDDHHMM (例如: 20251215 1400 或 2512151400)"]
-    );
-    await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+    const errorEmbed = EmbedBuilderUtil.createErrorEmbed("資料驗證失敗", [
+      "日期時間格式錯誤，請使用格式: YYMMDDHHmm 或 YYYYMMDDHHmm (例如: 2512151400 或 202512151400)",
+    ]);
+    await interaction.reply({
+      embeds: [errorEmbed],
+      flags: MessageFlags.Ephemeral,
+    });
     return;
   }
 
@@ -215,7 +219,8 @@ export async function handleModalSubmit(interaction) {
   data.time = parsedDateTime.time;
   data.title = interaction.fields.getTextInputValue("meeting_title");
   data.location = interaction.fields.getTextInputValue("meeting_location");
-  data.duration = parseFloat(interaction.fields.getTextInputValue("meeting_duration")) || 2;
+  data.duration =
+    parseFloat(interaction.fields.getTextInputValue("meeting_duration")) || 2;
   data.content = interaction.fields.getTextInputValue("meeting_content");
 
   // 驗證資料
@@ -226,9 +231,12 @@ export async function handleModalSubmit(interaction) {
   if (allErrors.length > 0) {
     const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
       "資料驗證失敗",
-      allErrors
+      allErrors,
     );
-    await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+    await interaction.reply({
+      embeds: [errorEmbed],
+      flags: MessageFlags.Ephemeral,
+    });
     tempMeetingData.delete(userId);
     return;
   }
@@ -241,10 +249,10 @@ export async function handleModalSubmit(interaction) {
 
   // 驗證日期時間是否有效
   if (!startTime.isValid()) {
-    const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
-      "日期時間格式錯誤",
-      [`無法解析日期時間: ${data.date} ${data.time}`, "請使用格式: YYYYMMDD HHMM 或 YYMMDDHHMM (例如: 20251215 1400 或 2512151400)"]
-    );
+    const errorEmbed = EmbedBuilderUtil.createErrorEmbed("日期時間格式錯誤", [
+      `無法解析日期時間: ${data.date} ${data.time}`,
+      "請使用格式: YYYYMMDD HHMM 或 YYMMDDHHMM (例如: 20251215 1400 或 2512151400)",
+    ]);
     await interaction.editReply({ embeds: [errorEmbed] });
     tempMeetingData.delete(userId);
     return;
@@ -255,15 +263,20 @@ export async function handleModalSubmit(interaction) {
   const conflictCheck = await calendarService.checkConflicts(
     startTime.toISOString(),
     endTime.toISOString(),
-    data.participants
+    data.participants,
   );
 
   // 若地點包含 TRB，額外檢查場地衝突
   let venueConflict = { hasConflict: false, conflicts: [] };
-  if (data.location && CONSTANTS.VENUE_KEYWORDS.some(kw => data.location.toUpperCase().includes(kw.toUpperCase()))) {
+  if (
+    data.location &&
+    CONSTANTS.VENUE_KEYWORDS.some((kw) =>
+      data.location.toUpperCase().includes(kw.toUpperCase()),
+    )
+  ) {
     venueConflict = await calendarService.checkVenueConflicts(
       startTime.toISOString(),
-      endTime.toISOString()
+      endTime.toISOString(),
     );
   }
 
@@ -279,13 +292,13 @@ export async function handleModalSubmit(interaction) {
     }
 
     const confirmButton = new ButtonBuilder()
-      .setCustomId('meeting_confirm_create')
-      .setLabel('確認建立')
+      .setCustomId("meeting_confirm_create")
+      .setLabel("確認建立")
       .setStyle(ButtonStyle.Success);
 
     const cancelButton = new ButtonBuilder()
-      .setCustomId('meeting_cancel_create')
-      .setLabel('取消')
+      .setCustomId("meeting_cancel_create")
+      .setLabel("取消")
       .setStyle(ButtonStyle.Danger);
 
     await interaction.editReply({
@@ -313,14 +326,14 @@ export async function createMeeting(interaction, data) {
 
     const confirmEmbed = EmbedBuilderUtil.createMeetingConfirmEmbed(
       data,
-      event
+      event,
     );
 
     // 先給建立者一個私人確認訊息（如果是 deferred）
     if (interaction.deferred) {
       await interaction.editReply({
-        content: '✅ 會議建立中...',
-        components: []
+        content: "✅ 會議建立中...",
+        components: [],
       });
     }
 
@@ -330,8 +343,8 @@ export async function createMeeting(interaction, data) {
     // 如果不是 deferred，給建立者一個私人確認
     if (!interaction.deferred) {
       await interaction.reply({
-        content: '✅ 會議已成功建立！',
-        flags: MessageFlags.Ephemeral
+        content: "✅ 會議已成功建立！",
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -340,10 +353,15 @@ export async function createMeeting(interaction, data) {
     if (scheduler) {
       await scheduler.triggerBoardUpdate();
       // 若地點含 TRB，也更新場地布告欄
-      if (data.location && CONSTANTS.VENUE_KEYWORDS.some(kw => data.location.toUpperCase().includes(kw.toUpperCase()))) {
+      if (
+        data.location &&
+        CONSTANTS.VENUE_KEYWORDS.some((kw) =>
+          data.location.toUpperCase().includes(kw.toUpperCase()),
+        )
+      ) {
         await scheduler.triggerVenueBoardUpdate();
       }
-      console.log('[AddMeeting] 已觸發布告欄更新');
+      console.log("[AddMeeting] 已觸發布告欄更新");
     }
 
     tempMeetingData.delete(interaction.user.id);
@@ -351,14 +369,17 @@ export async function createMeeting(interaction, data) {
     console.error("建立會議失敗:", error);
     const errorEmbed = EmbedBuilderUtil.createErrorEmbed(
       "建立會議失敗",
-      error.message
+      error.message,
     );
 
     // 錯誤訊息保持私人（ephemeral）
     if (interaction.deferred) {
       await interaction.editReply({ embeds: [errorEmbed], components: [] });
     } else {
-      await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+      await interaction.reply({
+        embeds: [errorEmbed],
+        flags: MessageFlags.Ephemeral,
+      });
     }
   }
 }
